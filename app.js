@@ -104,9 +104,29 @@ function emptyUserData(){
 }
 
 async function sha256(text){
-  const enc = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  // Web Crypto (crypto.subtle) braucht einen "sicheren Kontext" (HTTPS oder
+  // localhost). Auf reinem HTTP-Hosting ohne SSL wäre es sonst undefined
+  // und würde die App zum Absturz bringen — hier ein einfacher Fallback,
+  // damit Login/Registrierung in jedem Fall funktionieren.
+  if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+    try {
+      const enc = new TextEncoder().encode(text);
+      const buf = await window.crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    } catch(e) {
+      // fällt durch auf den Fallback unten
+    }
+  }
+  // Einfacher, deterministischer Fallback-Hash (kein Web-Crypto nötig).
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return 'fb_' + (h1>>>0).toString(16).padStart(8,'0') + (h2>>>0).toString(16).padStart(8,'0');
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function fmt(n){
@@ -138,6 +158,7 @@ async function persist(){
   if(!state.authUsername) return;
   state.data.settings = { theme: state.theme, lang: state.lang };
   await Store.saveUserData(state.authUsername, state.data);
+  injectStorageWarning();
 }
 
 function toast(msg){
@@ -202,9 +223,10 @@ const root = document.getElementById('root');
 
 function render(){
   applyTheme();
-  if(state.screen==='login') return renderLogin();
-  if(state.screen==='register') return renderRegister();
-  return renderApp();
+  if(state.screen==='login') renderLogin();
+  else if(state.screen==='register') renderRegister();
+  else renderApp();
+  injectStorageWarning();
 }
 
 /* ---------------------------- LOGIN / REGISTER ----------------------------- */
@@ -249,33 +271,45 @@ function renderRegister(){
 }
 
 async function doLogin(){
-  const user = document.getElementById('li-user').value.trim();
-  const pass = document.getElementById('li-pass').value;
-  if(!user || !pass){ state.loginError='Bitte Benutzername und Passwort eingeben.'; return render(); }
-  const users = await Store.getUsers();
-  const u = users.find(x=>x.username.toLowerCase()===user.toLowerCase());
-  if(!u){ state.loginError='Benutzer nicht gefunden.'; return render(); }
-  const hash = await sha256(pass);
-  if(hash !== u.passwordHash){ state.loginError='Falsches Passwort.'; return render(); }
-  await enterApp(u);
+  try{
+    const user = document.getElementById('li-user').value.trim();
+    const pass = document.getElementById('li-pass').value;
+    if(!user || !pass){ state.loginError='Bitte Benutzername und Passwort eingeben.'; return render(); }
+    const users = await Store.getUsers();
+    const u = users.find(x=>x.username.toLowerCase()===user.toLowerCase());
+    if(!u){ state.loginError='Benutzer nicht gefunden.'; return render(); }
+    const hash = await sha256(pass);
+    if(hash !== u.passwordHash){ state.loginError='Falsches Passwort.'; return render(); }
+    await enterApp(u);
+  }catch(e){
+    console.error('Login-Fehler:', e);
+    state.loginError = 'Unerwarteter Fehler beim Anmelden: '+(e.message||e);
+    render();
+  }
 }
 
 async function doRegister(){
-  const name = document.getElementById('re-name').value.trim();
-  const user = document.getElementById('re-user').value.trim();
-  const pass = document.getElementById('re-pass').value;
-  if(!name || !user || !pass){ state.regError='Bitte alle Felder ausfüllen.'; return render(); }
-  if(pass.length<4){ state.regError='Passwort muss mind. 4 Zeichen haben.'; return render(); }
-  const users = await Store.getUsers();
-  if(users.find(x=>x.username.toLowerCase()===user.toLowerCase())){
-    state.regError='Benutzername bereits vergeben.'; return render();
+  try{
+    const name = document.getElementById('re-name').value.trim();
+    const user = document.getElementById('re-user').value.trim();
+    const pass = document.getElementById('re-pass').value;
+    if(!name || !user || !pass){ state.regError='Bitte alle Felder ausfüllen.'; return render(); }
+    if(pass.length<4){ state.regError='Passwort muss mind. 4 Zeichen haben.'; return render(); }
+    const users = await Store.getUsers();
+    if(users.find(x=>x.username.toLowerCase()===user.toLowerCase())){
+      state.regError='Benutzername bereits vergeben.'; return render();
+    }
+    const hash = await sha256(pass);
+    const newUser = {username:user, passwordHash:hash, displayName:name};
+    users.push(newUser);
+    await Store.saveUsers(users);
+    await Store.saveUserData(user, emptyUserData());
+    await enterApp(newUser);
+  }catch(e){
+    console.error('Registrierungs-Fehler:', e);
+    state.regError = 'Unerwarteter Fehler bei der Registrierung: '+(e.message||e);
+    render();
   }
-  const hash = await sha256(pass);
-  const newUser = {username:user, passwordHash:hash, displayName:name};
-  users.push(newUser);
-  await Store.saveUsers(users);
-  await Store.saveUserData(user, emptyUserData());
-  await enterApp(newUser);
 }
 
 async function enterApp(u){
@@ -1010,9 +1044,28 @@ function exportCsv(){
   a.click();
 }
 
+/* ---------------------------- STORAGE WARNING BANNER --------------------------- */
+function storageWarningBannerHtml(){
+  if(typeof window.__storageDiag === 'undefined' || window.__storageDiag.ok) return '';
+  const en = state.lang==='en';
+  return `<div id="storage-warn" style="position:fixed; top:0; left:0; right:0; z-index:500; background:var(--red); color:#fff; padding:10px 18px; font-size:12.5px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:14px;">
+    <span>⚠ ${en?'Your browser is blocking local storage — data will NOT be saved after you close this tab.':'Dein Browser blockiert den lokalen Speicher — Daten werden NICHT gespeichert, wenn du diesen Tab schließt.'}
+    ${en?'In Brave: click the Shields icon and allow cookies/storage for this site, or disable Private/Incognito mode.':'Bei Brave: Klicke auf das Shields-Symbol und erlaube Cookies/Speicher für diese Seite, oder verlasse den privaten/Inkognito-Modus.'}</span>
+    <button onclick="document.getElementById('storage-warn').remove()" style="background:rgba(255,255,255,.2); border:none; color:#fff; border-radius:6px; padding:3px 9px; cursor:pointer; font-weight:700;">✕</button>
+  </div>`;
+}
+function injectStorageWarning(){
+  const existing = document.getElementById('storage-warn');
+  if(existing) existing.remove();
+  const html = storageWarningBannerHtml();
+  if(!html) return;
+  document.body.insertAdjacentHTML('afterbegin', html);
+}
+
 /* ---------------------------- BOOTSTRAP --------------------------------------- */
 (async function init(){
   applyTheme();
   root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;">Lädt…</div>`;
   render();
+  injectStorageWarning();
 })();

@@ -1362,12 +1362,20 @@ function injectStorageWarning(){
 }
 
 /* ---------------------------- BOOTSTRAP --------------------------------------- */
-// Wenn Supabase einen Passwort-Reset-Link öffnet, feuert dieses Event, statt
-// den Nutzer normal einzuloggen — wir zeigen dann den "Neues Passwort"-Screen.
+// Ein Klick auf den Reset-Link in der E-Mail loggt den Nutzer technisch ein
+// (Supabase braucht das, um das Passwort ändern zu dürfen) — das darf aber
+// NICHT dazu führen, dass er direkt in der App landet, sondern er soll erst
+// den "Neues Passwort setzen"-Screen sehen. Deshalb erkennen wir den
+// Recovery-Link schon an der URL und überspringen den normalen Auto-Login.
+const isRecoveryLink = /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
+
 sb.auth.onAuthStateChange((event)=>{
   if(event === 'PASSWORD_RECOVERY'){
     state.screen = 'reset-password';
     state.resetDone = false; state.resetError='';
+    // Token aus der Adresszeile entfernen, damit er nicht sichtbar/wieder-
+    // verwendbar in der Browser-Historie oder beim Neuladen hängen bleibt.
+    history.replaceState(null, '', window.location.pathname);
     render();
   }
 });
@@ -1375,6 +1383,17 @@ sb.auth.onAuthStateChange((event)=>{
 (async function init(){
   applyTheme();
   root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;">Lädt…</div>`;
+
+  if(isRecoveryLink){
+    // Der onAuthStateChange-Listener oben zeigt gleich den Reset-Screen an,
+    // sobald Supabase den Link verarbeitet hat. Falls das aus irgendeinem
+    // Grund nicht passiert (z.B. Link schon benutzt/abgelaufen), nach ein
+    // paar Sekunden trotzdem zum normalen Login zurückfallen, statt ewig
+    // auf "Lädt…" hängen zu bleiben.
+    setTimeout(()=>{ if(state.screen!=='reset-password') render(); }, 4000);
+    return;
+  }
+
   try{
     // Bereits eingeloggte Sitzung wiederherstellen (Supabase merkt sich das
     // Auth-Token selbst im Browser) — spart erneutes Einloggen bei Reload.

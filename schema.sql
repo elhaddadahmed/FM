@@ -47,11 +47,61 @@ create policy "Nutzer löschen nur ihre eigenen Daten"
   using (auth.uid() = id);
 
 -- =============================================================================
+-- LOGIN PER BENUTZERNAME + "PASSWORT VERGESSEN"
+-- =============================================================================
+-- Die App lässt Nutzer sich mit einem Benutzernamen statt einer E-Mail
+-- anmelden. Supabase Auth selbst kennt aber nur E-Mail-Adressen. Diese
+-- Funktion übersetzt "Benutzername -> hinterlegte E-Mail", damit:
+--   a) der Login mit Benutzername weiterhin funktioniert, und
+--   b) "Passwort vergessen" eine echte Reset-Mail verschicken kann, FALLS
+--      der Nutzer bei der Registrierung eine echte E-Mail angegeben hat.
+--      Hat er keine angegeben, wurde intern eine Pseudo-Adresse
+--      (…@finanzmanager.local) angelegt — dorthin kann natürlich keine Mail
+--      zugestellt werden; in dem Fall musst DU als Admin das Passwort über
+--      das Dashboard zurücksetzen (siehe unten).
+--
+-- Sicherheitshinweis: Die Funktion gibt bei einem gültigen Benutzernamen die
+-- zugehörige E-Mail zurück. Das ist für den beschriebenen Zweck nötig,
+-- bedeutet aber auch: Wer einen Benutzernamen errät, kann herausfinden, OB
+-- eine E-Mail hinterlegt ist. Für eine kleine, private App ist das ein
+-- akzeptables Risiko — bei einer öffentlichen App würde man das anders lösen.
+create or replace function public.get_login_email(p_username text)
+returns text
+language sql
+security definer
+set search_path = public, auth
+as $$
+  select email
+  from auth.users
+  where lower(raw_user_meta_data->>'username') = lower(trim(p_username))
+  limit 1;
+$$;
+
+-- Erlaubt auch nicht eingeloggten Besuchern, diese Funktion aufzurufen
+-- (nötig, weil man ja VOR dem Login die E-Mail zum Benutzernamen braucht).
+grant execute on function public.get_login_email(text) to anon, authenticated;
+
+-- =============================================================================
 -- ADMIN-ZUGANG
 -- =============================================================================
--- Du bist automatisch "Admin", weil dir das Supabase-Projekt gehört:
---   • Authentication → Users:  alle registrierten Nutzer sehen, sperren, löschen
---   • Table Editor → user_data: alle Daten aller Nutzer einsehen und bearbeiten
+-- Du bist automatisch "Admin", weil dir das Supabase-Projekt gehört. Alles
+-- läuft über das Supabase-Dashboard (https://supabase.com/dashboard), NICHT
+-- über die App selbst:
+--
+--   • Authentication → Users:
+--       - Liste ALLER registrierten Nutzer (E-Mail/Pseudo-Adresse, Datum,
+--         letzter Login).
+--       - Klick auf einen Nutzer → "Reset password": du vergibst dort DIREKT
+--         ein neues Passwort, ganz ohne E-Mail. Das ist der Weg, wenn ein
+--         Nutzer sein Passwort vergessen hat und KEINE echte E-Mail
+--         hinterlegt hatte.
+--       - Nutzer dort auch sperren oder komplett löschen (Auth + Daten dank
+--         "on delete cascade" oben).
+--
+--   • Table Editor → user_data:
+--       Alle Daten aller Nutzer (Buchungen, Sparziele, …) einsehen und
+--       bearbeiten — als Tabelle, keine SQL-Kenntnisse nötig.
+--
 --   • SQL Editor: beliebige Abfragen über alle Nutzer laufen lassen, z.B.:
 --
 --     select display_name, jsonb_array_length(buchungen) as anzahl_buchungen
@@ -60,5 +110,8 @@ create policy "Nutzer löschen nur ihre eigenen Daten"
 --
 -- Eine zusätzliche "Admin-Rolle" INNERHALB der App (z.B. ein Admin-Tab zum
 -- Verwalten anderer Nutzer direkt in der Weboberfläche) ist technisch
--- möglich, aber ein eigenes Stück Arbeit — sag Bescheid, falls gewünscht.
+-- möglich, erfordert aber eine serverseitige Funktion (Supabase Edge
+-- Function) mit dem service_role-Key, weil der Browser-Code aus
+-- Sicherheitsgründen niemals die Daten anderer Nutzer lesen darf. Sag
+-- Bescheid, falls du das zusätzlich willst.
 -- =============================================================================

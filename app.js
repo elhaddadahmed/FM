@@ -469,7 +469,12 @@ async function doForgotPassword(){
     // existiert oder eine E-Mail hinterlegt ist — verhindert, dass jemand
     // durch Ausprobieren herausfinden kann, welche Benutzernamen es gibt.
     if(email && !email.endsWith('@finanzmanager.local')){
-      await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
+      // Fehler wird dem Nutzer bewusst NICHT angezeigt (kein Informationsleck),
+      // aber in der Konsole geloggt, damit der Admin es debuggen kann.
+      if(error) console.error('resetPasswordForEmail Fehler:', error.message, error);
+    } else {
+      console.warn('Kein Reset-Mail verschickt: kein Benutzer gefunden oder keine echte E-Mail hinterlegt (Pseudo-Adresse @finanzmanager.local). Aufgelöste Adresse:', email);
     }
     state.forgotDone = true;
     state.forgotError = '';

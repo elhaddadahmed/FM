@@ -12,5 +12,5 @@
    die Row-Level-Security-Regeln aus schema.sql. Verwende NIEMALS den
    "service_role" Key hier, der gehört niemals in den Browser-Code.
    ============================================================================= */
-const SUPABASE_URL = "https://DEIN-PROJEKT.supabase.co";
-const SUPABASE_ANON_KEY = "DEIN-ANON-PUBLIC-KEY";
+const SUPABASE_URL = "https://yjnizevfdwbmrrcfkwqk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_i0cxtCxgiqECLCgZZI_EIw_6BroPwCl";

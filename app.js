@@ -18,6 +18,8 @@ const KAT_ICON = {};
 
 const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const MONATE_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONATE_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+function monateFor(lang){ return lang==='en' ? MONATE_EN : lang==='ar' ? MONATE_AR : MONATE; }
 
 const CHART_COLORS = ["#6387FF","#00D28C","#FFB932","#F8506E","#A06EFF","#26D3C4","#E0405F"];
 
@@ -40,7 +42,15 @@ const L = {
     importCsv:"CSV importieren", theme:"Design", language:"Sprache", dangerZone:"Konto",
     deleteAccount:"Alle Daten löschen", allGood:"Alles im grünen Bereich — keine besonderen Hinweise.",
     transactions:"Buchungen", noGoals:"Noch keine Sparziele angelegt.", noRecurring:"Keine wiederkehrenden Zahlungen.",
-    reached:"erreicht", of:"von"
+    reached:"erreicht", of:"von", remaining:"noch offen", forgotPassword:"Passwort vergessen?",
+    resetTitle:"Passwort zurücksetzen", resetDesc:"Gib deinen Benutzernamen ein. Falls ein Konto mit hinterlegter E-Mail existiert, senden wir dir einen Link zum Zurücksetzen.",
+    sendResetLink:"Link senden", resetSent:"Falls das Konto existiert und eine E-Mail hinterlegt ist, wurde soeben eine E-Mail mit einem Reset-Link verschickt. Bitte Posteingang (auch Spam-Ordner) prüfen.",
+    backToLogin:"Zurück zum Login", emailOptional:"E-Mail (optional – für Passwort-Reset)",
+    emailHint:"Ohne E-Mail-Adresse kann das Passwort nur von einem Admin über das Supabase-Dashboard zurückgesetzt werden.",
+    newPasswordTitle:"Neues Passwort festlegen", newPassword:"Neues Passwort", setPassword:"Passwort speichern",
+    passwordUpdated:"Passwort wurde geändert. Du kannst dich jetzt anmelden.",
+    importSuccess:"Buchungen erfolgreich importiert.", importError:"CSV konnte nicht gelesen werden. Bitte Format prüfen.",
+    brokenConn:"Verbindung zu Supabase konnte nicht hergestellt werden. Das passiert oft, wenn Browser-Schutzfunktionen (z. B. Brave Shields, Werbeblocker) Anfragen blockieren. Bitte Shields für diese Seite deaktivieren oder einen anderen Browser testen."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -60,7 +70,43 @@ const L = {
     importCsv:"Import CSV", theme:"Theme", language:"Language", dangerZone:"Account",
     deleteAccount:"Delete all data", allGood:"Everything looks good — no alerts.",
     transactions:"Transactions", noGoals:"No savings goals yet.", noRecurring:"No recurring payments.",
-    reached:"reached", of:"of"
+    reached:"reached", of:"of", remaining:"remaining", forgotPassword:"Forgot password?",
+    resetTitle:"Reset password", resetDesc:"Enter your username. If an account with an email on file exists, we'll send a reset link.",
+    sendResetLink:"Send link", resetSent:"If the account exists and has an email on file, a reset email was just sent. Please check your inbox (and spam folder).",
+    backToLogin:"Back to login", emailOptional:"Email (optional – for password reset)",
+    emailHint:"Without an email address, only an admin can reset the password via the Supabase dashboard.",
+    newPasswordTitle:"Set new password", newPassword:"New password", setPassword:"Save password",
+    passwordUpdated:"Password changed. You can now log in.",
+    importSuccess:"Transactions imported successfully.", importError:"Could not read the CSV. Please check the format.",
+    brokenConn:"Could not connect to Supabase. This is often caused by browser protections (e.g. Brave Shields, ad blockers) blocking requests. Please disable Shields for this site or try a different browser."
+  },
+  ar: {
+    dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
+    recurring:"مدفوعات متكررة", payslip:"حاسبة الراتب", ai:"تحليل ذكي", settings:"الإعدادات",
+    logout:"تسجيل الخروج", addIncome:"+ دخل", addExpense:"− مصروف", balance:"الرصيد",
+    savingsRate:"معدل الادخار", totalIncome:"إجمالي الدخل", totalExpenses:"إجمالي المصروفات",
+    noData:"لا توجد عمليات لهذا الشهر بعد.", delete:"حذف", save:"حفظ",
+    cancel:"إلغاء", description:"الوصف", amount:"المبلغ (€)", category:"الفئة",
+    date:"التاريخ", note:"ملاحظة (اختياري)", newGoal:"+ هدف ادخار جديد", goalName:"اسم الهدف",
+    targetAmount:"المبلغ المستهدف (€)", currentAmount:"المدخر حاليًا (€)", deposit:"+ إيداع",
+    depositAmount:"مبلغ الإيداع (€)", newRecurring:"+ دفعة جديدة", nextDue:"الاستحقاق القادم",
+    bookNow:"تسجيل الآن", overdue:"متأخر", dueSoon:"مستحق قريبًا", grossSalary:"الراتب الإجمالي (€)",
+    taxClass:"فئة الضريبة", churchTax:"ضريبة الكنيسة", kvExtra:"رسم إضافي للتأمين الصحي (%)",
+    calculate:"احسب", applyToIncome:"إضافة كدخل", netSalary:"صافي الراتب",
+    totalDeductions:"إجمالي الاستقطاعات", deductionRate:"نسبة الاستقطاع", financeScore:"المؤشر المالي: ",
+    autoCategorize:"اقتراح الفئات تلقائيًا", exportCsv:"تصدير كملف CSV",
+    importCsv:"استيراد CSV", theme:"المظهر", language:"اللغة", dangerZone:"الحساب",
+    deleteAccount:"حذف جميع البيانات", allGood:"كل شيء على ما يرام — لا توجد تنبيهات.",
+    transactions:"العمليات", noGoals:"لا توجد أهداف ادخار بعد.", noRecurring:"لا توجد مدفوعات متكررة.",
+    reached:"تم تحقيقه", of:"من", remaining:"المتبقي", forgotPassword:"هل نسيت كلمة المرور؟",
+    resetTitle:"إعادة تعيين كلمة المرور", resetDesc:"أدخل اسم المستخدم الخاص بك. إذا كان هناك حساب ببريد إلكتروني مسجل، سنرسل رابط إعادة التعيين.",
+    sendResetLink:"إرسال الرابط", resetSent:"إذا كان الحساب موجودًا وله بريد إلكتروني مسجل، فقد تم للتو إرسال رسالة لإعادة التعيين. يرجى التحقق من صندوق الوارد ومجلد البريد غير المرغوب فيه.",
+    backToLogin:"العودة لتسجيل الدخول", emailOptional:"البريد الإلكتروني (اختياري – لإعادة تعيين كلمة المرور)",
+    emailHint:"بدون بريد إلكتروني، يمكن فقط لمسؤول النظام إعادة تعيين كلمة المرور عبر لوحة تحكم Supabase.",
+    newPasswordTitle:"تعيين كلمة مرور جديدة", newPassword:"كلمة المرور الجديدة", setPassword:"حفظ كلمة المرور",
+    passwordUpdated:"تم تغيير كلمة المرور. يمكنك الآن تسجيل الدخول.",
+    importSuccess:"تم استيراد العمليات بنجاح.", importError:"تعذّرت قراءة ملف CSV. يرجى التحقق من التنسيق.",
+    brokenConn:"تعذّر الاتصال بـ Supabase. غالبًا ما يحدث هذا بسبب أدوات حماية المتصفح (مثل Brave Shields أو أدوات حظر الإعلانات) التي تمنع الطلبات. يرجى تعطيل Shields لهذا الموقع أو تجربة متصفح آخر."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -71,18 +117,60 @@ function catLabel(key){
       Kindergeld:"Child benefit",Bürgergeld:"Basic income"};
     return map[key] || key;
   }
+  if(state.lang==="ar"){
+    const map={Wohnen:"سكن",Lebensmittel:"بقالة",Transport:"مواصلات",Gesundheit:"صحة",
+      Freizeit:"ترفيه",Kleidung:"ملابس",Sonstiges:"أخرى",Gehalt:"راتب",Freelance:"عمل حر",
+      Kindergeld:"إعانة أطفال",Bürgergeld:"دخل أساسي"};
+    return map[key] || key;
+  }
   return key;
 }
 
 /* ---------------------------- SUPABASE CLIENT ---------------------------- */
 // SUPABASE_URL / SUPABASE_ANON_KEY kommen aus supabase-config.js
+// Falls das supabase-js Skript von der CDN (jsdelivr) blockiert wurde — z.B.
+// durch Brave Shields, einen Werbeblocker oder eine Firmen-Firewall — ist
+// window.supabase nicht definiert. Statt eines kryptischen Fehlers oder
+// eines ewigen Ladebildschirms zeigen wir dann eine klare Meldung.
+if(!window.supabase){
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const root = document.getElementById('root');
+    if(root) root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; padding:24px;">
+      <div style="max-width:420px; text-align:center; color:#DCE4FC; font-family:-apple-system,sans-serif;">
+        <div style="font-size:34px; margin-bottom:12px;">⚠️</div>
+        <h2 style="margin:0 0 10px;">Skript konnte nicht geladen werden</h2>
+        <p style="color:#8fa0c8; font-size:14px; line-height:1.6;">
+          Die Supabase-Bibliothek (von cdn.jsdelivr.net) wurde von deinem Browser blockiert.
+          Das passiert häufig bei <b>Brave</b> (Shields) oder Werbeblockern.<br><br>
+          Bitte in Brave auf das Shields-Symbol (🛡) in der Adresszeile klicken und die
+          Shields für diese Seite deaktivieren, oder <code>cdn.jsdelivr.net</code> in deinem
+          Adblocker freigeben. Danach die Seite neu laden.
+        </p>
+      </div>
+    </div>`;
+  });
+  throw new Error('supabase-js wurde nicht geladen (vermutlich blockiert)');
+}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Interner Trick: Die App zeigt weiterhin "Benutzername" (wie im Original-
 // Java-Programm), Supabase Auth braucht aber intern eine E-Mail-Adresse.
-// Wir bauen daraus automatisch eine interne Pseudo-Adresse.
+// Falls beim Registrieren keine echte E-Mail angegeben wird, bauen wir
+// automatisch eine interne Pseudo-Adresse. Für den Login wird die
+// tatsächlich hinterlegte Adresse serverseitig über die RPC-Funktion
+// "get_login_email" (siehe schema.sql) anhand des Benutzernamens ermittelt.
 function usernameToEmail(username){
   return username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '') + '@finanzmanager.local';
+}
+async function resolveLoginEmail(username){
+  try{
+    const { data, error } = await sb.rpc('get_login_email', { p_username: username.trim() });
+    if(!error && data) return data;
+  }catch(e){ /* Funktion evtl. noch nicht angelegt -> Fallback */ }
+  return usernameToEmail(username);
+}
+function isNetworkError(e){
+  return e && (e.message==='Failed to fetch' || e.message==='Load failed' || e instanceof TypeError);
 }
 
 /* ---------------------------- STORAGE (Supabase/Postgres) ---------------- */
@@ -153,6 +241,9 @@ const state = {
 
 function applyTheme(){
   document.body.setAttribute('data-theme', state.theme);
+  const rtl = state.lang === 'ar';
+  document.documentElement.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', state.lang);
 }
 
 async function persist(){
@@ -227,6 +318,8 @@ function render(){
   applyTheme();
   if(state.screen==='login') renderLogin();
   else if(state.screen==='register') renderRegister();
+  else if(state.screen==='forgot') renderForgot();
+  else if(state.screen==='reset-password') renderResetPassword();
   else renderApp();
   injectStorageWarning();
 }
@@ -243,10 +336,12 @@ function renderLogin(){
         <div class="field"><label>Benutzername</label><input id="li-user" autocomplete="username"/></div>
         <div class="field"><label>Passwort</label><input id="li-pass" type="password" autocomplete="current-password"/></div>
         <button class="btn btn-primary" id="li-submit">Anmelden</button>
+        <div class="login-switch" style="margin-top:10px;"><b id="go-forgot">${t('forgotPassword')}</b></div>
         <div class="login-switch">Noch kein Konto? <b id="go-register">Registrieren</b></div>
       </div>
     </div>`;
   document.getElementById('go-register').onclick = ()=>{ state.screen='register'; state.regError=''; render(); };
+  document.getElementById('go-forgot').onclick = ()=>{ state.screen='forgot'; state.forgotDone=false; render(); };
   document.getElementById('li-submit').onclick = doLogin;
   const pass = document.getElementById('li-pass');
   pass.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -264,6 +359,11 @@ function renderRegister(){
         <div class="field"><label>Anzeigename</label><input id="re-name"/></div>
         <div class="field"><label>Benutzername</label><input id="re-user" autocomplete="username"/></div>
         <div class="field"><label>Passwort</label><input id="re-pass" type="password" autocomplete="new-password"/></div>
+        <div class="field">
+          <label>${t('emailOptional')}</label>
+          <input id="re-email" type="email" autocomplete="email"/>
+          <div style="font-size:11px; color:var(--muted); margin-top:5px; line-height:1.4;">${t('emailHint')}</div>
+        </div>
         <button class="btn btn-primary" id="re-submit">Konto erstellen</button>
         <div class="login-switch">Schon registriert? <b id="go-login">Anmelden</b></div>
       </div>
@@ -277,7 +377,8 @@ async function doLogin(){
     const user = document.getElementById('li-user').value.trim();
     const pass = document.getElementById('li-pass').value;
     if(!user || !pass){ state.loginError='Bitte Benutzername und Passwort eingeben.'; return render(); }
-    const { data, error } = await sb.auth.signInWithPassword({ email: usernameToEmail(user), password: pass });
+    const email = await resolveLoginEmail(user);
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     if(error){
       state.loginError = error.message==='Invalid login credentials'
         ? 'Benutzername oder Passwort falsch.'
@@ -287,7 +388,7 @@ async function doLogin(){
     await enterApp(data.user, user);
   }catch(e){
     console.error('Login-Fehler:', e);
-    state.loginError = 'Unerwarteter Fehler beim Anmelden: '+(e.message||e);
+    state.loginError = isNetworkError(e) ? t('brokenConn') : 'Unerwarteter Fehler beim Anmelden: '+(e.message||e);
     render();
   }
 }
@@ -297,16 +398,18 @@ async function doRegister(){
     const name = document.getElementById('re-name').value.trim();
     const user = document.getElementById('re-user').value.trim();
     const pass = document.getElementById('re-pass').value;
+    const realEmail = document.getElementById('re-email').value.trim();
     if(!name || !user || !pass){ state.regError='Bitte alle Felder ausfüllen.'; return render(); }
     if(pass.length<6){ state.regError='Passwort muss mind. 6 Zeichen haben.'; return render(); }
     if(!/^[a-zA-Z0-9_.-]+$/.test(user)){ state.regError='Benutzername darf nur Buchstaben, Zahlen, _ . - enthalten.'; return render(); }
+    if(realEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(realEmail)){ state.regError='Bitte eine gültige E-Mail-Adresse eingeben (oder das Feld leer lassen).'; return render(); }
     const { data, error } = await sb.auth.signUp({
-      email: usernameToEmail(user), password: pass,
+      email: realEmail || usernameToEmail(user), password: pass,
       options: { data: { username: user, display_name: name } }
     });
     if(error){
       state.regError = error.message.includes('already registered') || error.message.includes('already been registered')
-        ? 'Benutzername bereits vergeben.'
+        ? (realEmail ? 'Diese E-Mail-Adresse ist bereits registriert.' : 'Benutzername bereits vergeben.')
         : 'Registrierung fehlgeschlagen: '+error.message;
       return render();
     }
@@ -322,8 +425,95 @@ async function doRegister(){
     await enterApp(data.user, user);
   }catch(e){
     console.error('Registrierungs-Fehler:', e);
-    state.regError = 'Unerwarteter Fehler bei der Registrierung: '+(e.message||e);
+    state.regError = isNetworkError(e) ? t('brokenConn') : 'Unerwarteter Fehler bei der Registrierung: '+(e.message||e);
     render();
+  }
+}
+
+/* ---------------------------- PASSWORT VERGESSEN --------------------------- */
+function renderForgot(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-brand"><span class="dot"></span> FinanzManager</div>
+      <div class="login-card">
+        <h1>${t('resetTitle')}</h1>
+        <p class="sub">${t('resetDesc')}</p>
+        ${state.forgotDone ? `
+          <div class="err-msg show" style="background:var(--green-dim); color:var(--green);">${t('resetSent')}</div>
+          <button class="btn btn-ghost" id="fp-back" style="width:100%;">${t('backToLogin')}</button>
+        ` : `
+          <div class="err-msg ${state.forgotError?'show':''}" id="fpErr">${state.forgotError||''}</div>
+          <div class="field"><label>Benutzername</label><input id="fp-user" autocomplete="username"/></div>
+          <button class="btn btn-primary" id="fp-submit">${t('sendResetLink')}</button>
+          <div class="login-switch">${t('backToLogin').replace('Zurück zum ','')} <b id="fp-back2">${t('backToLogin')}</b></div>
+        `}
+      </div>
+    </div>`;
+  if(state.forgotDone){
+    document.getElementById('fp-back').onclick = ()=>{ state.screen='login'; render(); };
+  }else{
+    document.getElementById('fp-submit').onclick = doForgotPassword;
+    document.getElementById('fp-back2').onclick = ()=>{ state.screen='login'; render(); };
+    const inp = document.getElementById('fp-user');
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') doForgotPassword(); });
+    inp.focus();
+  }
+}
+
+async function doForgotPassword(){
+  try{
+    const user = document.getElementById('fp-user').value.trim();
+    if(!user){ state.forgotError='Bitte Benutzernamen eingeben.'; return render(); }
+    const email = await resolveLoginEmail(user);
+    // Absichtlich immer die gleiche Erfolgsmeldung, egal ob der Benutzername
+    // existiert oder eine E-Mail hinterlegt ist — verhindert, dass jemand
+    // durch Ausprobieren herausfinden kann, welche Benutzernamen es gibt.
+    if(email && !email.endsWith('@finanzmanager.local')){
+      await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
+    }
+    state.forgotDone = true;
+    state.forgotError = '';
+    render();
+  }catch(e){
+    console.error('Passwort-Reset Fehler:', e);
+    state.forgotDone = true; // gleiche Meldung anzeigen, kein Informationsleck
+    render();
+  }
+}
+
+/* ---------------------------- NEUES PASSWORT SETZEN ------------------------ */
+function renderResetPassword(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-brand"><span class="dot"></span> FinanzManager</div>
+      <div class="login-card">
+        <h1>${t('newPasswordTitle')}</h1>
+        ${state.resetDone ? `
+          <div class="err-msg show" style="background:var(--green-dim); color:var(--green);">${t('passwordUpdated')}</div>
+          <button class="btn btn-primary" id="rp-login" style="width:100%;">${t('backToLogin')}</button>
+        ` : `
+          <div class="err-msg ${state.resetError?'show':''}" id="rpErr">${state.resetError||''}</div>
+          <div class="field"><label>${t('newPassword')}</label><input id="rp-pass" type="password" autocomplete="new-password"/></div>
+          <button class="btn btn-primary" id="rp-submit">${t('setPassword')}</button>
+        `}
+      </div>
+    </div>`;
+  if(state.resetDone){
+    document.getElementById('rp-login').onclick = async ()=>{ await sb.auth.signOut(); state.screen='login'; state.resetDone=false; render(); };
+  }else{
+    document.getElementById('rp-submit').onclick = async ()=>{
+      const pass = document.getElementById('rp-pass').value;
+      if(!pass || pass.length<6){ state.resetError='Passwort muss mind. 6 Zeichen haben.'; return render(); }
+      try{
+        const { error } = await sb.auth.updateUser({ password: pass });
+        if(error){ state.resetError = error.message; return render(); }
+        state.resetDone = true; state.resetError='';
+        render();
+      }catch(e){
+        state.resetError = isNetworkError(e) ? t('brokenConn') : (e.message||String(e));
+        render();
+      }
+    };
   }
 }
 
@@ -354,6 +544,7 @@ async function doLogout(){
 function renderApp(){
   root.innerHTML = `
     <div class="app-shell">
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
       <div class="sidebar" id="sidebar">
         <div class="sb-brand"><span class="dot"></span> FinanzManager</div>
         <div class="sb-nav" id="sb-nav"></div>
@@ -388,11 +579,25 @@ function renderApp(){
     `<div class="sb-item ${state.tab===id?'active':''}" data-tab="${id}"><span class="ic">${icon}</span>${label}</div>`
   ).join('');
   nav.querySelectorAll('.sb-item').forEach(el=>{
-    el.onclick = ()=>{ state.tab = el.dataset.tab; render(); };
+    el.onclick = ()=>{ state.tab = el.dataset.tab; closeSidebar(); render(); };
   });
   document.getElementById('btn-logout').onclick = doLogout;
+  document.getElementById('sidebar-backdrop').onclick = closeSidebar;
   renderTopbar();
   renderTab();
+}
+
+function closeSidebar(){
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if(sb) sb.classList.remove('open');
+  if(bd) bd.classList.remove('show');
+}
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if(sb) sb.classList.toggle('open');
+  if(bd) bd.classList.toggle('show');
 }
 
 function renderTopbar(){
@@ -402,11 +607,14 @@ function renderTopbar(){
     recurring:t('recurring'), payslip:t('payslip'), ai:t('ai'), settings:t('settings')
   };
   const needsMonthNav = ['dashboard','income','expenses','ai'].includes(state.tab);
-  const monLabel = (state.lang==='en'?MONATE_EN:MONATE)[state.aktiverMonat-1] + ' ' + state.aktivesJahr;
+  const monLabel = monateFor(state.lang)[state.aktiverMonat-1] + ' ' + state.aktivesJahr;
   tb.innerHTML = `
-    <div>
-      <h2>${titles[state.tab]}</h2>
-      <div class="sub">${escapeHtml(state.displayName)} · ${monLabel}</div>
+    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+      <button class="icon-btn sb-hamburger" id="btn-hamburger" aria-label="Menu">☰</button>
+      <div style="min-width:0;">
+        <h2 style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${titles[state.tab]}</h2>
+        <div class="sub" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(state.displayName)} · ${monLabel}</div>
+      </div>
     </div>
     ${needsMonthNav ? `
     <div class="month-nav">
@@ -415,6 +623,7 @@ function renderTopbar(){
       <button id="mv-next">${ICO.chevronR}</button>
     </div>` : ''}
   `;
+  document.getElementById('btn-hamburger').onclick = toggleSidebar;
   if(needsMonthNav){
     document.getElementById('mv-prev').onclick = ()=>monatVor(-1);
     document.getElementById('mv-next').onclick = ()=>monatVor(1);
@@ -568,7 +777,7 @@ function trendChart(trend){
   const einPts = pts(trend.map(x=>x.ein));
   const ausPts = pts(trend.map(x=>x.aus));
   const toPath = p => 'M'+p.map(([x,y])=>`${x.toFixed(1)},${y.toFixed(1)}`).join(' L');
-  const labels = trend.map(x=>(state.lang==='en'?MONATE_EN:MONATE)[x.m-1].slice(0,3));
+  const labels = trend.map(x=>monateFor(state.lang)[x.m-1].slice(0,3));
   return `<svg width="100%" height="${H+26}" viewBox="0 0 ${W} ${H+26}" preserveAspectRatio="xMidYMid meet">
     <path d="${toPath(einPts)}" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
     <path d="${toPath(ausPts)}" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
@@ -682,6 +891,7 @@ function renderGoals(c){
           <div>
             <div class="name">${done?'🎉 ':''}${escapeHtml(g.name)}</div>
             <div class="sub">${fmt(g.gespart)} ${t('of')} ${fmt(g.ziel)}</div>
+            ${!done ? `<div class="sub" style="color:var(--amber); font-weight:600; margin-top:2px;">${fmt(Math.max(0, g.ziel-g.gespart))} ${t('remaining')}</div>` : ''}
           </div>
           <button class="tx-del" style="opacity:1" data-id="${g.id}" title="${t('delete')}">${ICO.trash}</button>
         </div>
@@ -890,7 +1100,7 @@ function renderPayslip(c){
   document.getElementById('p-calc').onclick = recalcAndRender;
   document.getElementById('p-apply').onclick = ()=>{
     const r = steuerBerechnen(payslipState.brutto, payslipState.klasse, payslipState.kirche, payslipState.kv);
-    const monatName = (state.lang==='en'?MONATE_EN:MONATE)[state.aktiverMonat-1];
+    const monatName = monateFor(state.lang)[state.aktiverMonat-1];
     state.data.buchungen.push({ id:uid(), beschreibung:monatName+' '+state.aktivesJahr+' – '+catLabel('Gehalt'), betrag:r.netto, kategorie:'Gehalt', datum:todayISO(), notiz:'', istEinnahme:true });
     persist();
     toast((state.lang==='en'?'Net salary saved: ':'Nettogehalt gespeichert: ')+fmt(r.netto));
@@ -975,7 +1185,7 @@ function renderAI(c){
 
   c.innerHTML = `
     <div class="card" style="margin-bottom:16px;">
-      <h3>${t('ai')} – ${(state.lang==='en'?MONATE_EN:MONATE)[state.aktiverMonat-1]} ${state.aktivesJahr}</h3>
+      <h3>${t('ai')} – ${monateFor(state.lang)[state.aktiverMonat-1]} ${state.aktivesJahr}</h3>
       <div style="color:var(--muted); font-size:12.5px; margin-bottom:14px;">${en?'Personalized tips based on your bookings.':'Persönliche Tipps auf Basis deiner Buchungen.'}</div>
       <div style="display:flex; align-items:center; gap:14px;">
         <span style="font-weight:700; color:${scoreColor}; white-space:nowrap; font-size:13.5px;">${t('financeScore')}${score}/100</span>
@@ -1015,15 +1225,21 @@ function renderSettings(c){
         </div>
       </div>
       <div class="settings-row">
-        <div><div class="lbl">${t('language')}</div><div class="desc">${state.lang==='en'?'Interface language':'Sprache der Oberfläche'}</div></div>
-        <div class="seg" id="lang-seg" style="width:140px;">
+        <div><div class="lbl">${t('language')}</div><div class="desc">${state.lang==='en'?'Interface language':state.lang==='ar'?'لغة الواجهة':'Sprache der Oberfläche'}</div></div>
+        <div class="seg" id="lang-seg" style="width:190px;">
           <button data-v="de" class="${state.lang==='de'?'active':''}">DE</button>
           <button data-v="en" class="${state.lang==='en'?'active':''}">EN</button>
+          <button data-v="ar" class="${state.lang==='ar'?'active':''}">AR</button>
         </div>
       </div>
       <div class="settings-row">
-        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download all bookings as CSV':'Alle Buchungen als CSV herunterladen'}</div></div>
+        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download all bookings as CSV':state.lang==='ar'?'تنزيل جميع العمليات كملف CSV':'Alle Buchungen als CSV herunterladen'}</div></div>
         <button class="btn btn-ghost btn-sm" id="btn-export">⬇ CSV</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">${t('importCsv')}</div><div class="desc">${state.lang==='en'?'Add bookings from a CSV file (same format as export)':state.lang==='ar'?'إضافة عمليات من ملف CSV (بنفس تنسيق التصدير)':'Buchungen aus einer CSV-Datei hinzufügen (gleiches Format wie beim Export)'}</div></div>
+        <label class="btn btn-ghost btn-sm" for="file-import" style="cursor:pointer;">⬆ CSV</label>
+        <input type="file" id="file-import" accept=".csv,text/csv" style="display:none;"/>
       </div>
     </div>
     <div class="card">
@@ -1040,6 +1256,7 @@ function renderSettings(c){
     b.onclick = ()=>{ state.lang = b.dataset.v; persist(); render(); };
   });
   document.getElementById('btn-export').onclick = exportCsv;
+  document.getElementById('file-import').addEventListener('change', importCsv);
   document.getElementById('btn-del-account').onclick = async ()=>{
     if(!confirm(state.lang==='en'
       ? 'Really delete all your data? This cannot be undone. (Your login itself stays; contact the site admin to remove it entirely.)'
@@ -1063,6 +1280,65 @@ function exportCsv(){
   a.click();
 }
 
+// Sehr simpler CSV-Parser passend zum Export-Format oben (Semikolon-getrennt,
+// Felder in doppelten Anführungszeichen, "" als Escape für ein Anführungszeichen).
+function parseCsvLine(line){
+  const out = []; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(inQ){
+      if(ch==='"'){
+        if(line[i+1]==='"'){ cur+='"'; i++; } else { inQ=false; }
+      } else cur+=ch;
+    } else {
+      if(ch==='"') inQ=true;
+      else if(ch===';'){ out.push(cur); cur=''; }
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function importCsv(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const text = reader.result.replace(/\r/g,'');
+      const lines = text.split('\n').filter(l=>l.trim().length);
+      if(lines.length<2) throw new Error('empty');
+      // erste Zeile ist die Kopfzeile (Datum;Beschreibung;Betrag;Kategorie;Notiz;IstEinnahme) — wird übersprungen
+      let importedCount = 0;
+      for(let i=1;i<lines.length;i++){
+        const cols = parseCsvLine(lines[i]);
+        if(cols.length<6) continue;
+        const [datum, beschreibung, betragRaw, kategorie, notiz, istEinnahmeRaw] = cols;
+        const betrag = parseFloat(String(betragRaw).replace(',','.'));
+        if(!datum || !beschreibung || isNaN(betrag)) continue;
+        const istEinnahme = String(istEinnahmeRaw).trim().toLowerCase()==='true';
+        state.data.buchungen.push({
+          id: uid(), beschreibung, betrag: round2(betrag),
+          kategorie: kategorie || 'Sonstiges', datum, notiz: notiz||'', istEinnahme
+        });
+        importedCount++;
+      }
+      if(importedCount===0) throw new Error('no rows');
+      persist();
+      toast(`${t('importSuccess')} (${importedCount})`);
+      render();
+    }catch(e){
+      console.error('CSV-Import Fehler:', e);
+      toast(t('importError'));
+    }finally{
+      ev.target.value = '';
+    }
+  };
+  reader.onerror = ()=>{ toast(t('importError')); };
+  reader.readAsText(file, 'utf-8');
+}
+
 /* ---------------------------- SYNC WARNING BANNER --------------------------- */
 function storageWarningBannerHtml(){
   if(window.__syncOk !== false) return '';
@@ -1081,6 +1357,16 @@ function injectStorageWarning(){
 }
 
 /* ---------------------------- BOOTSTRAP --------------------------------------- */
+// Wenn Supabase einen Passwort-Reset-Link öffnet, feuert dieses Event, statt
+// den Nutzer normal einzuloggen — wir zeigen dann den "Neues Passwort"-Screen.
+sb.auth.onAuthStateChange((event)=>{
+  if(event === 'PASSWORD_RECOVERY'){
+    state.screen = 'reset-password';
+    state.resetDone = false; state.resetError='';
+    render();
+  }
+});
+
 (async function init(){
   applyTheme();
   root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;">Lädt…</div>`;
@@ -1092,6 +1378,14 @@ function injectStorageWarning(){
       await enterApp(session.user, session.user.user_metadata?.username);
       return;
     }
-  }catch(e){ console.error('Session-Wiederherstellung fehlgeschlagen:', e); }
+  }catch(e){
+    console.error('Session-Wiederherstellung fehlgeschlagen:', e);
+    if(isNetworkError(e)){
+      root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;">
+        <div style="max-width:380px; color:var(--fg); font-size:13.5px; line-height:1.6;">⚠️ ${t('brokenConn')}</div>
+      </div>`;
+      return;
+    }
+  }
   render();
 })();

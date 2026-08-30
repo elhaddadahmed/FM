@@ -15,6 +15,11 @@ const KAT_EINNAHMEN = [
 ];
 const KAT_ICON = {};
 [...KAT_AUSGABEN, ...KAT_EINNAHMEN].forEach(k => KAT_ICON[k.key] = k.icon);
+KAT_ICON['Überweisung'] = '🔄';
+
+const KONTO_TYP_ICON = { bank:"🏦", bargeld:"💵", kreditkarte:"💳", sonstiges:"📁" };
+const KONTO_TYPEN = ["bank","bargeld","kreditkarte","sonstiges"];
+const FREE_KONTEN_LIMIT = 2; // Free-Plan: max. 2 Konten, Pro: unbegrenzt
 
 const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const MONATE_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -50,7 +55,22 @@ const L = {
     newPasswordTitle:"Neues Passwort festlegen", newPassword:"Neues Passwort", setPassword:"Passwort speichern",
     passwordUpdated:"Passwort wurde geändert. Du kannst dich jetzt anmelden.",
     importSuccess:"Buchungen erfolgreich importiert.", importError:"CSV konnte nicht gelesen werden. Bitte Format prüfen.",
-    brokenConn:"Verbindung zu Supabase konnte nicht hergestellt werden. Das passiert oft, wenn Browser-Schutzfunktionen (z. B. Brave Shields, Werbeblocker) Anfragen blockieren. Bitte Shields für diese Seite deaktivieren oder einen anderen Browser testen."
+    brokenConn:"Verbindung zu Supabase konnte nicht hergestellt werden. Das passiert oft, wenn Browser-Schutzfunktionen (z. B. Brave Shields, Werbeblocker) Anfragen blockieren. Bitte Shields für diese Seite deaktivieren oder einen anderen Browser testen.",
+    accounts:"Konten", account:"Konto", allAccounts:"Alle Konten", allCategories:"Alle Kategorien",
+    search:"Suche", edit:"Bearbeiten", konto_bank:"Bank", konto_bargeld:"Bargeld", konto_kreditkarte:"Kreditkarte", konto_sonstiges:"Sonstiges",
+    addAccount:"Konto hinzufügen", editAccount:"Konto bearbeiten", accountName:"Kontoname", accountType:"Kontoart",
+    startBalance:"Startguthaben (€)", startBalanceLocked:"Das Startguthaben kann nach dem Anlegen nicht mehr geändert werden — bei Bedarf per Buchung korrigieren.",
+    transfer:"Überweisung", transferFrom:"Von Konto", transferTo:"Auf Konto",
+    sameAccountError:"Quell- und Zielkonto müssen unterschiedlich sein.", needTwoAccounts:"Du brauchst mindestens 2 Konten für eine Überweisung.",
+    lastAccountError:"Das letzte verbleibende Konto kann nicht gelöscht werden.", accountNotEmptyError:"Dieses Konto hat noch Buchungen. Bitte erst verschieben oder löschen.",
+    accountLimitReached:`Im Free-Plan sind maximal ${FREE_KONTEN_LIMIT} Konten möglich. Mit Pro unbegrenzt.`, totalBalance:"Gesamtguthaben",
+    fillAllFields:"Bitte alle Felder ausfüllen.", manageCategories:"Eigene Kategorien", addCategory:"Kategorie hinzufügen",
+    categoryName:"Name der Kategorie", categoryIcon:"Icon (Emoji)", parentCategory:"Oberkategorie (optional, für Unterkategorie)",
+    none:"Keine", subcategoryOf:"Unterkategorie von", noCustomCategories:"Noch keine eigenen Kategorien angelegt.",
+    categoryInUseConfirm:"Diese Kategorie wird bereits verwendet. Trotzdem löschen? (Vorhandene Buchungen behalten den Namen.)",
+    categoryExists:"Diese Kategorie gibt es schon.", planFree:"Free-Plan", planPro:"Pro-Plan",
+    planFreeDesc:`Kostenlos, max. ${FREE_KONTEN_LIMIT} Konten.`, planProDesc:"Unbegrenzte Konten & alle Funktionen freigeschaltet.",
+    upgradeNow:"Upgrade auf Pro", upgradeComingSoon:"Die Bezahlfunktion ist technisch vorbereitet, aber noch nicht aktiv geschaltet."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -78,7 +98,22 @@ const L = {
     newPasswordTitle:"Set new password", newPassword:"New password", setPassword:"Save password",
     passwordUpdated:"Password changed. You can now log in.",
     importSuccess:"Transactions imported successfully.", importError:"Could not read the CSV. Please check the format.",
-    brokenConn:"Could not connect to Supabase. This is often caused by browser protections (e.g. Brave Shields, ad blockers) blocking requests. Please disable Shields for this site or try a different browser."
+    brokenConn:"Could not connect to Supabase. This is often caused by browser protections (e.g. Brave Shields, ad blockers) blocking requests. Please disable Shields for this site or try a different browser.",
+    accounts:"Accounts", account:"Account", allAccounts:"All accounts", allCategories:"All categories",
+    search:"Search", edit:"Edit", konto_bank:"Bank", konto_bargeld:"Cash", konto_kreditkarte:"Credit card", konto_sonstiges:"Other",
+    addAccount:"Add account", editAccount:"Edit account", accountName:"Account name", accountType:"Account type",
+    startBalance:"Starting balance (€)", startBalanceLocked:"The starting balance can't be changed after creation — adjust it with a booking if needed.",
+    transfer:"Transfer", transferFrom:"From account", transferTo:"To account",
+    sameAccountError:"Source and destination account must be different.", needTwoAccounts:"You need at least 2 accounts to make a transfer.",
+    lastAccountError:"The last remaining account can't be deleted.", accountNotEmptyError:"This account still has bookings. Please move or delete them first.",
+    accountLimitReached:`The Free plan allows up to ${FREE_KONTEN_LIMIT} accounts. Unlimited with Pro.`, totalBalance:"Total balance",
+    fillAllFields:"Please fill in all fields.", manageCategories:"Custom categories", addCategory:"Add category",
+    categoryName:"Category name", categoryIcon:"Icon (emoji)", parentCategory:"Parent category (optional, for a subcategory)",
+    none:"None", subcategoryOf:"Subcategory of", noCustomCategories:"No custom categories yet.",
+    categoryInUseConfirm:"This category is already in use. Delete anyway? (Existing bookings keep the name.)",
+    categoryExists:"This category already exists.", planFree:"Free plan", planPro:"Pro plan",
+    planFreeDesc:`Free, up to ${FREE_KONTEN_LIMIT} accounts.`, planProDesc:"Unlimited accounts & all features unlocked.",
+    upgradeNow:"Upgrade to Pro", upgradeComingSoon:"The payment flow is technically ready but not switched on yet."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -106,7 +141,22 @@ const L = {
     newPasswordTitle:"تعيين كلمة مرور جديدة", newPassword:"كلمة المرور الجديدة", setPassword:"حفظ كلمة المرور",
     passwordUpdated:"تم تغيير كلمة المرور. يمكنك الآن تسجيل الدخول.",
     importSuccess:"تم استيراد العمليات بنجاح.", importError:"تعذّرت قراءة ملف CSV. يرجى التحقق من التنسيق.",
-    brokenConn:"تعذّر الاتصال بـ Supabase. غالبًا ما يحدث هذا بسبب أدوات حماية المتصفح (مثل Brave Shields أو أدوات حظر الإعلانات) التي تمنع الطلبات. يرجى تعطيل Shields لهذا الموقع أو تجربة متصفح آخر."
+    brokenConn:"تعذّر الاتصال بـ Supabase. غالبًا ما يحدث هذا بسبب أدوات حماية المتصفح (مثل Brave Shields أو أدوات حظر الإعلانات) التي تمنع الطلبات. يرجى تعطيل Shields لهذا الموقع أو تجربة متصفح آخر.",
+    accounts:"الحسابات", account:"حساب", allAccounts:"كل الحسابات", allCategories:"كل الفئات",
+    search:"بحث", edit:"تعديل", konto_bank:"بنك", konto_bargeld:"نقدًا", konto_kreditkarte:"بطاقة ائتمان", konto_sonstiges:"أخرى",
+    addAccount:"إضافة حساب", editAccount:"تعديل الحساب", accountName:"اسم الحساب", accountType:"نوع الحساب",
+    startBalance:"الرصيد الافتتاحي (€)", startBalanceLocked:"لا يمكن تغيير الرصيد الافتتاحي بعد الإنشاء — يمكن تصحيحه عبر عملية إذا لزم الأمر.",
+    transfer:"تحويل", transferFrom:"من حساب", transferTo:"إلى حساب",
+    sameAccountError:"يجب أن يكون حساب المصدر والوجهة مختلفين.", needTwoAccounts:"تحتاج إلى حسابين على الأقل لإجراء تحويل.",
+    lastAccountError:"لا يمكن حذف آخر حساب متبقٍ.", accountNotEmptyError:"لا يزال هذا الحساب يحتوي على عمليات. يرجى نقلها أو حذفها أولاً.",
+    accountLimitReached:`الخطة المجانية تسمح بحد أقصى ${FREE_KONTEN_LIMIT} حسابات. غير محدود مع Pro.`, totalBalance:"الرصيد الإجمالي",
+    fillAllFields:"يرجى ملء جميع الحقول.", manageCategories:"فئات مخصصة", addCategory:"إضافة فئة",
+    categoryName:"اسم الفئة", categoryIcon:"أيقونة (رمز تعبيري)", parentCategory:"الفئة الرئيسية (اختياري، لفئة فرعية)",
+    none:"لا شيء", subcategoryOf:"فئة فرعية من", noCustomCategories:"لا توجد فئات مخصصة بعد.",
+    categoryInUseConfirm:"هذه الفئة مستخدمة بالفعل. هل تريد حذفها على أي حال؟ (العمليات الحالية تحتفظ بالاسم.)",
+    categoryExists:"هذه الفئة موجودة بالفعل.", planFree:"الخطة المجانية", planPro:"خطة Pro",
+    planFreeDesc:`مجانية، حتى ${FREE_KONTEN_LIMIT} حسابات.`, planProDesc:"حسابات غير محدودة وجميع الميزات مفعّلة.",
+    upgradeNow:"الترقية إلى Pro", upgradeComingSoon:"نظام الدفع جاهز تقنيًا لكنه غير مفعّل بعد."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -114,13 +164,13 @@ function catLabel(key){
   if(state.lang==="en"){
     const map={Wohnen:"Housing",Lebensmittel:"Groceries",Transport:"Transport",Gesundheit:"Health",
       Freizeit:"Leisure",Kleidung:"Clothing",Sonstiges:"Other",Gehalt:"Salary",Freelance:"Freelance",
-      Kindergeld:"Child benefit",Bürgergeld:"Basic income"};
+      Kindergeld:"Child benefit",Bürgergeld:"Basic income",Überweisung:"Transfer"};
     return map[key] || key;
   }
   if(state.lang==="ar"){
     const map={Wohnen:"سكن",Lebensmittel:"بقالة",Transport:"مواصلات",Gesundheit:"صحة",
       Freizeit:"ترفيه",Kleidung:"ملابس",Sonstiges:"أخرى",Gehalt:"راتب",Freelance:"عمل حر",
-      Kindergeld:"إعانة أطفال",Bürgergeld:"دخل أساسي"};
+      Kindergeld:"إعانة أطفال",Bürgergeld:"دخل أساسي",Überweisung:"تحويل"};
     return map[key] || key;
   }
   return key;
@@ -179,19 +229,22 @@ const Store = {
     try{
       const { data, error } = await sb.from('user_data').select('*').eq('id', userId).single();
       if(error || !data) return null;
-      return {
+      return migrateData({
         buchungen: data.buchungen || [],
         sparziele: data.sparziele || [],
         wiederkehrend: data.wiederkehrend || [],
+        konten: data.konten || [],
+        kategorien: data.kategorien || { ausgaben:[], einnahmen:[] },
         settings: data.settings || { theme:'dark', lang:'de' }
-      };
+      });
     }catch(e){ console.error('getUserData Fehler:', e); return null; }
   },
   async createUserData(userId, displayName, data){
     const { error } = await sb.from('user_data').insert({
       id: userId, display_name: displayName,
       buchungen: data.buchungen, sparziele: data.sparziele,
-      wiederkehrend: data.wiederkehrend, settings: data.settings
+      wiederkehrend: data.wiederkehrend, konten: data.konten,
+      kategorien: data.kategorien, settings: data.settings
     });
     if(error) console.error('createUserData Fehler:', error);
     return !error;
@@ -199,21 +252,59 @@ const Store = {
   async saveUserData(userId, data){
     const { error } = await sb.from('user_data').update({
       buchungen: data.buchungen, sparziele: data.sparziele,
-      wiederkehrend: data.wiederkehrend, settings: data.settings,
+      wiederkehrend: data.wiederkehrend, konten: data.konten,
+      kategorien: data.kategorien, settings: data.settings,
       updated_at: new Date().toISOString()
     }).eq('id', userId);
     if(error) console.error('saveUserData Fehler:', error);
     return !error;
+  },
+  // Pro/Free-Plan lebt bewusst in einer EIGENEN Tabelle mit eigenen RLS-Regeln
+  // (siehe schema.sql) — so kann ein Nutzer sich nicht einfach selbst über die
+  // Browser-Konsole auf "pro" setzen. Nur eine serverseitige Funktion
+  // (z.B. Stripe-Webhook mit service_role) darf das ändern.
+  async createFreeSubscription(userId){
+    const { error } = await sb.from('subscriptions').insert({ id:userId, plan:'free' });
+    if(error) console.error('createFreeSubscription Fehler:', error);
+    return !error;
+  },
+  async getPlan(userId){
+    try{
+      const { data, error } = await sb.from('subscriptions').select('plan').eq('id', userId).single();
+      if(error || !data) return 'free';
+      return data.plan || 'free';
+    }catch(e){ console.error('getPlan Fehler:', e); return 'free'; }
   }
 };
 
 function emptyUserData(){
   return {
-    buchungen: [],   // {id, beschreibung, betrag, kategorie, datum(ISO), notiz, istEinnahme}
+    buchungen: [],   // {id, beschreibung, betrag, kategorie, datum(ISO), notiz, istEinnahme, kontoId, istUeberweisung?, gegenkontoId?}
     sparziele: [],   // {id, name, ziel, gespart}
-    wiederkehrend: [], // {id, name, betrag, kategorie, naechstesFaellig(ISO), istEinnahme, notiz}
+    wiederkehrend: [], // {id, name, betrag, kategorie, naechstesFaellig(ISO), istEinnahme, notiz, kontoId}
+    konten: [{ id: uid(), name: "Hauptkonto", typ: "bank", startsaldo: 0 }], // {id, name, typ, startsaldo}
+    kategorien: { ausgaben: [], einnahmen: [] }, // eigene Kategorien: {key, icon, eltern}
     settings: { theme:"dark", lang:"de" }
   };
+}
+
+// Sorgt dafür, dass ältere Konten (vor Einführung von Mehrfach-Konten) nicht
+// kaputtgehen: legt bei Bedarf ein Standardkonto an und hängt alle
+// bestehenden Buchungen/wiederkehrenden Zahlungen ohne kontoId daran.
+function migrateData(data){
+  let changed = false;
+  if(!data.konten || data.konten.length===0){
+    data.konten = [{ id: uid(), name: "Hauptkonto", typ:"bank", startsaldo:0 }];
+    changed = true;
+  }
+  const defaultKontoId = data.konten[0].id;
+  data.buchungen.forEach(b=>{ if(!b.kontoId){ b.kontoId = defaultKontoId; changed = true; } });
+  data.wiederkehrend.forEach(w=>{ if(!w.kontoId){ w.kontoId = defaultKontoId; changed = true; } });
+  if(!data.kategorien) data.kategorien = { ausgaben:[], einnahmen:[] };
+  if(!data.kategorien.ausgaben) data.kategorien.ausgaben = [];
+  if(!data.kategorien.einnahmen) data.kategorien.einnahmen = [];
+  data.__migrated = changed;
+  return data;
 }
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -235,9 +326,12 @@ const state = {
   aktivesJahr: new Date().getFullYear(),
   aktiverMonat: new Date().getMonth()+1,
   data: emptyUserData(),
+  plan: 'free', // 'free' | 'pro' — kommt aus der subscriptions-Tabelle, nicht clientseitig änderbar
+  txFilter: { search:'', kategorie:'', kontoId:'' },
   loginError: '',
   regError: ''
 };
+function isPro(){ return state.plan === 'pro'; }
 
 function applyTheme(){
   document.body.setAttribute('data-theme', state.theme);
@@ -273,8 +367,41 @@ function gefilterteBuchungen(){
     return d.getFullYear()===state.aktivesJahr && (d.getMonth()+1)===state.aktiverMonat;
   }).sort((a,b)=> b.datum.localeCompare(a.datum));
 }
-function summeEin(list){ return list.filter(b=>b.istEinnahme).reduce((s,b)=>s+b.betrag,0); }
-function summeAus(list){ return list.filter(b=>!b.istEinnahme).reduce((s,b)=>s+b.betrag,0); }
+// Überweisungen zwischen eigenen Konten sind kein "echtes" Einkommen/Ausgabe —
+// sie würden sonst Sparquote & Dashboard verfälschen (Geld bewegt sich nur
+// zwischen eigenen Töpfen). Deshalb hier immer herausgefiltert.
+function summeEin(list){ return list.filter(b=>b.istEinnahme && !b.istUeberweisung).reduce((s,b)=>s+b.betrag,0); }
+function summeAus(list){ return list.filter(b=>!b.istEinnahme && !b.istUeberweisung).reduce((s,b)=>s+b.betrag,0); }
+
+/* ---------------------------- HELPERS: KONTEN ------------------------------ */
+function kontoSaldo(kontoId){
+  const k = state.data.konten.find(x=>x.id===kontoId);
+  if(!k) return 0;
+  const sum = state.data.buchungen.filter(b=>b.kontoId===kontoId)
+    .reduce((s,b)=> s + (b.istEinnahme ? b.betrag : -b.betrag), 0);
+  return round2(k.startsaldo + sum);
+}
+function gesamtSaldo(){
+  return round2(state.data.konten.reduce((s,k)=> s+kontoSaldo(k.id), 0));
+}
+function kontoName(kontoId){
+  const k = state.data.konten.find(x=>x.id===kontoId);
+  return k ? k.name : '—';
+}
+
+/* ---------------------------- HELPERS: KATEGORIEN --------------------------- */
+// Kombiniert die fest eingebauten mit den vom Nutzer selbst angelegten
+// Kategorien (inkl. optionaler Unterkategorien über "eltern").
+function allCats(isIncome){
+  const base = isIncome ? KAT_EINNAHMEN : KAT_AUSGABEN;
+  const custom = isIncome ? state.data.kategorien.einnahmen : state.data.kategorien.ausgaben;
+  return [...base, ...custom];
+}
+function iconFor(key){
+  if(KAT_ICON[key]) return KAT_ICON[key];
+  const found = [...state.data.kategorien.ausgaben, ...state.data.kategorien.einnahmen].find(k=>k.key===key);
+  return found ? found.icon : '💠';
+}
 
 function monatVor(delta){
   state.aktiverMonat += delta;
@@ -308,7 +435,7 @@ function steuerBerechnen(brutto, klasse, kirche, kvZusatz){
 const ICO = {
   dashboard:"📊", income:"💰", expenses:"🧾", goals:"🎯", recurring:"🔁",
   payslip:"🧮", ai:"✨", settings:"⚙️", chevronL:"‹", chevronR:"›", close:"✕",
-  trash:"🗑", plus:"+", logout:"⏻"
+  trash:"🗑", plus:"+", logout:"⏻", konten:"🏦"
 };
 
 /* ---------------------------- ROOT RENDER --------------------------------- */
@@ -422,6 +549,7 @@ async function doRegister(){
       state.regError = 'Konto wurde erstellt, aber die Daten konnten nicht angelegt werden. Bitte kontaktiere den Support.';
       return render();
     }
+    await Store.createFreeSubscription(data.user.id);
     await enterApp(data.user, user);
   }catch(e){
     console.error('Registrierungs-Fehler:', e);
@@ -527,20 +655,26 @@ async function enterApp(authUser, username){
   state.authUsername = username || (authUser.user_metadata && authUser.user_metadata.username) || authUser.email.split('@')[0];
   state.displayName = (authUser.user_metadata && authUser.user_metadata.display_name) || state.authUsername;
   let data = await Store.getUserData(authUser.id);
-  if(!data) data = emptyUserData();
+  if(!data) data = migrateData(emptyUserData());
   if(!data.settings) data.settings = {theme:'dark', lang:'de'};
   state.data = data;
   state.theme = data.settings.theme || 'dark';
   state.lang = data.settings.lang || 'de';
+  state.plan = await Store.getPlan(authUser.id);
   state.screen = 'app';
   state.tab = 'dashboard';
   state.loginError=''; state.regError='';
   render();
+  // Falls beim Laden alte Daten automatisch migriert wurden (z.B. Standard-
+  // konto neu angelegt), das einmal direkt speichern statt zu warten, bis
+  // der Nutzer selbst etwas ändert.
+  if(data.__migrated) persist();
 }
 
 async function doLogout(){
   await sb.auth.signOut();
   state.screen='login'; state.authId=null; state.authUsername=null; state.data=emptyUserData();
+  state.plan='free';
   state.theme='dark'; applyTheme();
   render();
 }
@@ -571,6 +705,7 @@ function renderApp(){
     </div>`;
   const navItems = [
     ['dashboard', ICO.dashboard, t('dashboard')],
+    ['konten', ICO.konten, t('accounts')],
     ['income', ICO.income, t('income')],
     ['expenses', ICO.expenses, t('expenses')],
     ['goals', ICO.goals, t('goals')],
@@ -608,7 +743,7 @@ function toggleSidebar(){
 function renderTopbar(){
   const tb = document.getElementById('topbar');
   const titles = {
-    dashboard:t('dashboard'), income:t('income'), expenses:t('expenses'), goals:t('goals'),
+    dashboard:t('dashboard'), konten:t('accounts'), income:t('income'), expenses:t('expenses'), goals:t('goals'),
     recurring:t('recurring'), payslip:t('payslip'), ai:t('ai'), settings:t('settings')
   };
   const needsMonthNav = ['dashboard','income','expenses','ai'].includes(state.tab);
@@ -638,6 +773,7 @@ function renderTopbar(){
 function renderTab(){
   const c = document.getElementById('content');
   if(state.tab==='dashboard') return renderDashboard(c);
+  if(state.tab==='konten') return renderKonten(c);
   if(state.tab==='income') return renderTxTab(c, true);
   if(state.tab==='expenses') return renderTxTab(c, false);
   if(state.tab==='goals') return renderGoals(c);
@@ -649,6 +785,150 @@ function renderTab(){
 
 function escapeHtml(s){
   return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------------------------- KONTEN --------------------------------------- */
+function renderKonten(c){
+  const konten = state.data.konten;
+  c.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; flex-wrap:wrap;">
+      <div class="card kpi-card" style="flex:1; min-width:200px;">
+        <div class="lbl">🏦 ${t('totalBalance')}</div>
+        <div class="val ${gesamtSaldo()>=0?'pos':'neg'}">${fmt(gesamtSaldo())}</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="btn-transfer">🔄 ${t('transfer')}</button>
+        <button class="btn btn-primary" id="btn-add-konto">+ ${t('addAccount')}</button>
+      </div>
+    </div>
+    <div class="grid grid-3" id="konten-grid"></div>
+  `;
+  const grid = document.getElementById('konten-grid');
+  grid.innerHTML = konten.map(k=>{
+    const saldo = kontoSaldo(k.id);
+    return `<div class="goal-card">
+      <div class="top">
+        <div>
+          <div class="name">${KONTO_TYP_ICON[k.typ]||'📁'} ${escapeHtml(k.name)}</div>
+          <div class="sub">${t('konto_'+k.typ)}</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="icon-btn" data-edit="${k.id}" title="${t('edit')}">✎</button>
+          <button class="icon-btn" data-del="${k.id}" title="${t('delete')}">🗑</button>
+        </div>
+      </div>
+      <div class="val ${saldo>=0?'pos':'neg'}" style="font-family:var(--font-num); font-size:22px; font-weight:700;">${fmt(saldo)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('btn-add-konto').onclick = ()=>openKontoModal();
+  document.getElementById('btn-transfer').onclick = openTransferModal;
+  grid.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = ()=> openKontoModal(konten.find(k=>k.id===btn.dataset.edit));
+  });
+  grid.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.del;
+      if(state.data.konten.length<=1){ toast(t('lastAccountError')); return; }
+      const hasTx = state.data.buchungen.some(b=>b.kontoId===id) || state.data.wiederkehrend.some(w=>w.kontoId===id);
+      if(hasTx){ toast(t('accountNotEmptyError')); return; }
+      state.data.konten = state.data.konten.filter(k=>k.id!==id);
+      persist(); render();
+    };
+  });
+}
+
+function openKontoModal(existing){
+  // Free-Plan: begrenzte Anzahl Konten (Pro-Feature: unbegrenzt)
+  if(!existing && !isPro() && state.data.konten.length>=FREE_KONTEN_LIMIT){
+    toast(t('accountLimitReached'));
+    return;
+  }
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${existing? t('editAccount') : t('addAccount')}</h3>
+      <div class="field"><label>${t('accountName')}</label><input id="kt-name" value="${existing?escapeHtml(existing.name):''}"/></div>
+      <div class="field"><label>${t('accountType')}</label>
+        <div class="chip-row" id="kt-typ">
+          ${KONTO_TYPEN.map(ty=>`<div class="chip ${(existing?existing.typ:'bank')===ty?'active':''}" data-ty="${ty}">${KONTO_TYP_ICON[ty]} ${t('konto_'+ty)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>${t('startBalance')}</label><input id="kt-start" type="number" step="0.01" value="${existing?existing.startsaldo:0}" ${existing?'disabled':''}/></div>
+      ${existing?`<div style="font-size:11px; color:var(--muted); margin-top:-8px;">${t('startBalanceLocked')}</div>`:''}
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="kt-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="kt-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  let selectedTyp = existing ? existing.typ : 'bank';
+  bg.querySelectorAll('#kt-typ .chip').forEach(ch=>{
+    ch.onclick = ()=>{ selectedTyp = ch.dataset.ty; bg.querySelectorAll('#kt-typ .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
+  });
+  bg.querySelector('#kt-cancel').onclick = ()=> bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#kt-save').onclick = ()=>{
+    const name = bg.querySelector('#kt-name').value.trim();
+    const start = parseFloat(bg.querySelector('#kt-start').value.replace(',','.'))||0;
+    if(!name){ toast(t('fillAllFields')); return; }
+    if(existing){
+      existing.name = name; existing.typ = selectedTyp;
+    } else {
+      state.data.konten.push({ id: uid(), name, typ: selectedTyp, startsaldo: round2(start) });
+    }
+    persist(); bg.remove(); render();
+  };
+  bg.querySelector('#kt-name').focus();
+}
+
+function openTransferModal(){
+  const konten = state.data.konten;
+  if(konten.length<2){ toast(t('needTwoAccounts')); return; }
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('transfer')}</h3>
+      <div class="field"><label>${t('transferFrom')}</label>
+        <select id="tr-from">${konten.map(k=>`<option value="${k.id}">${escapeHtml(k.name)} (${fmt(kontoSaldo(k.id))})</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>${t('transferTo')}</label>
+        <select id="tr-to">${konten.map((k,i)=>`<option value="${k.id}" ${i===1?'selected':''}>${escapeHtml(k.name)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>${t('amount')}</label><input id="tr-amt" type="number" step="0.01" min="0"/></div>
+      <div class="field"><label>${t('date')}</label><input id="tr-date" type="date" value="${todayISO()}"/></div>
+      <div class="field"><label>${t('note')}</label><input id="tr-note"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="tr-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="tr-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#tr-cancel').onclick = ()=> bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#tr-save').onclick = ()=>{
+    const from = bg.querySelector('#tr-from').value;
+    const to = bg.querySelector('#tr-to').value;
+    const amt = parseFloat(bg.querySelector('#tr-amt').value.replace(',','.'));
+    const date = bg.querySelector('#tr-date').value || todayISO();
+    const note = bg.querySelector('#tr-note').value.trim();
+    if(from===to){ toast(t('sameAccountError')); return; }
+    if(!amt || amt<=0){ toast(t('fillAllFields')); return; }
+    const pairId = uid();
+    state.data.buchungen.push({
+      id: uid(), beschreibung: t('transfer')+' → '+kontoName(to), betrag: round2(amt),
+      kategorie: 'Überweisung', datum: date, notiz: note, istEinnahme: false,
+      kontoId: from, istUeberweisung: true, gegenkontoId: to, transferPaar: pairId
+    });
+    state.data.buchungen.push({
+      id: uid(), beschreibung: t('transfer')+' ← '+kontoName(from), betrag: round2(amt),
+      kategorie: 'Überweisung', datum: date, notiz: note, istEinnahme: true,
+      kontoId: to, istUeberweisung: true, gegenkontoId: from, transferPaar: pairId
+    });
+    persist(); bg.remove(); render();
+  };
+  bg.querySelector('#tr-amt').focus();
 }
 
 /* ---------------------------- DASHBOARD ------------------------------------ */
@@ -681,9 +961,9 @@ function renderDashboard(c){
   const bilanz = ein-aus;
   const sparquote = ein>0 ? ((ein-aus)/ein*100) : 0;
 
-  // category breakdown for donut (expenses)
+  // category breakdown for donut (expenses) — Überweisungen zählen nicht als Ausgabe
   const katMap = {};
-  buf.filter(b=>!b.istEinnahme).forEach(b=> katMap[b.kategorie] = (katMap[b.kategorie]||0)+b.betrag);
+  buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMap[b.kategorie] = (katMap[b.kategorie]||0)+b.betrag);
   const katEntries = Object.entries(katMap).sort((a,b)=>b[1]-a[1]);
 
   // 6-month trend
@@ -756,7 +1036,7 @@ function donutChart(entries){
     const pct = (val/total*100).toFixed(0);
     return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:7px;">
       <span style="width:9px;height:9px;border-radius:3px;background:${color};flex-shrink:0;"></span>
-      <span style="flex:1;color:var(--fg);">${KAT_ICON[kat]||''} ${catLabel(kat)}</span>
+      <span style="flex:1;color:var(--fg);">${iconFor(kat)} ${catLabel(kat)}</span>
       <span style="color:var(--muted);font-family:var(--font-num);">${pct}%</span>
     </div>`;
   }).join('');
@@ -800,7 +1080,7 @@ function txList(list){
   if(!list.length) return `<div class="empty-state"><div class="big">📭</div>${t('noData')}</div>`;
   return `<div class="tx-list">${list.map(b=>`
     <div class="tx-row">
-      <div class="tx-icon">${KAT_ICON[b.kategorie]||'💠'}</div>
+      <div class="tx-icon">${iconFor(b.kategorie)}</div>
       <div class="tx-info">
         <div class="name">${escapeHtml(b.beschreibung)}</div>
         <div class="meta">${catLabel(b.kategorie)} · ${b.datum}${b.notiz? ' · '+escapeHtml(b.notiz):''}</div>
@@ -812,19 +1092,38 @@ function txList(list){
 
 /* ---------------------------- INCOME / EXPENSES TAB ------------------------ */
 function renderTxTab(c, isIncome){
-  const buf = gefilterteBuchungen().filter(b=> b.istEinnahme===isIncome);
+  let buf = gefilterteBuchungen().filter(b=> b.istEinnahme===isIncome && !b.istUeberweisung);
+  const f = state.txFilter;
+  if(f.search) buf = buf.filter(b=> (b.beschreibung+' '+(b.notiz||'')).toLowerCase().includes(f.search.toLowerCase()));
+  if(f.kategorie) buf = buf.filter(b=> b.kategorie===f.kategorie);
+  if(f.kontoId) buf = buf.filter(b=> b.kontoId===f.kontoId);
   const total = buf.reduce((s,b)=>s+b.betrag,0);
+  const cats = allCats(isIncome);
   c.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-      <div class="card kpi-card" style="flex:1; margin-right:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:14px; flex-wrap:wrap;">
+      <div class="card kpi-card" style="flex:1; min-width:180px;">
         <div class="lbl">${isIncome?'📈':'📉'} ${isIncome? t('totalIncome'):t('totalExpenses')}</div>
         <div class="val ${isIncome?'pos':'neg'}">${fmt(total)}</div>
       </div>
       <button class="btn btn-primary" id="btn-add-tx" style="white-space:nowrap;">${isIncome? t('addIncome'): t('addExpense')}</button>
     </div>
+    <div class="card" style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; padding:14px 16px;">
+      <input id="tf-search" placeholder="${t('search')}…" value="${escapeHtml(f.search)}" style="flex:2; min-width:140px; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 12px; font-size:13px; outline:none;"/>
+      <select id="tf-kat" style="flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 12px; font-size:13px;">
+        <option value="">${t('allCategories')}</option>
+        ${cats.map(k=>`<option value="${k.key}" ${f.kategorie===k.key?'selected':''}>${k.icon} ${catLabel(k.key)}</option>`).join('')}
+      </select>
+      <select id="tf-konto" style="flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 12px; font-size:13px;">
+        <option value="">${t('allAccounts')}</option>
+        ${state.data.konten.map(k=>`<option value="${k.id}" ${f.kontoId===k.id?'selected':''}>${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}
+      </select>
+    </div>
     <div class="card">${txList(buf)}</div>
   `;
   document.getElementById('btn-add-tx').onclick = ()=>openTxModal(isIncome);
+  document.getElementById('tf-search').oninput = e=>{ state.txFilter.search = e.target.value; renderTxTab(c, isIncome); };
+  document.getElementById('tf-kat').onchange = e=>{ state.txFilter.kategorie = e.target.value; renderTxTab(c, isIncome); };
+  document.getElementById('tf-konto').onchange = e=>{ state.txFilter.kontoId = e.target.value; renderTxTab(c, isIncome); };
   c.querySelectorAll('.tx-del').forEach(btn=>{
     btn.onclick = ()=>{
       state.data.buchungen = state.data.buchungen.filter(b=>b.id!==btn.dataset.id);
@@ -834,8 +1133,9 @@ function renderTxTab(c, isIncome){
 }
 
 function openTxModal(isIncome){
-  const cats = isIncome ? KAT_EINNAHMEN : KAT_AUSGABEN;
+  const cats = allCats(isIncome);
   let selectedCat = cats[0].key;
+  let selectedKonto = state.data.konten[0]?.id;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
   bg.innerHTML = `
@@ -843,9 +1143,12 @@ function openTxModal(isIncome){
       <h3>${isIncome? t('addIncome'): t('addExpense')}</h3>
       <div class="field"><label>${t('description')}</label><input id="tx-desc"/></div>
       <div class="field"><label>${t('amount')}</label><input id="tx-amt" type="number" step="0.01" min="0"/></div>
+      <div class="field"><label>${t('account')}</label>
+        <select id="tx-konto">${state.data.konten.map(k=>`<option value="${k.id}">${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}</select>
+      </div>
       <div class="field"><label>${t('category')}</label>
         <div class="chip-row" id="tx-cats">
-          ${cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.icon} ${catLabel(k.key)}</div>`).join('')}
+          ${cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.eltern?'↳ ':''}${k.icon} ${catLabel(k.key)}</div>`).join('')}
         </div>
       </div>
       <div class="field"><label>${t('date')}</label><input id="tx-date" type="date" value="${todayISO()}"/></div>
@@ -859,6 +1162,7 @@ function openTxModal(isIncome){
   bg.querySelectorAll('#tx-cats .chip').forEach(ch=>{
     ch.onclick = ()=>{ selectedCat = ch.dataset.k; bg.querySelectorAll('#tx-cats .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
   });
+  bg.querySelector('#tx-konto').onchange = e=>{ selectedKonto = e.target.value; };
   bg.querySelector('#tx-cancel').onclick = ()=> bg.remove();
   bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
   bg.querySelector('#tx-save').onclick = ()=>{
@@ -867,7 +1171,7 @@ function openTxModal(isIncome){
     const date = bg.querySelector('#tx-date').value || todayISO();
     const note = bg.querySelector('#tx-note').value.trim();
     if(!desc || !amt || amt<=0){ toast(state.lang==='en'?'Please fill description and amount.':'Bitte Beschreibung und Betrag ausfüllen.'); return; }
-    state.data.buchungen.push({ id:uid(), beschreibung:desc, betrag:round2(amt), kategorie:selectedCat, datum:date, notiz:note, istEinnahme:isIncome });
+    state.data.buchungen.push({ id:uid(), beschreibung:desc, betrag:round2(amt), kategorie:selectedCat, datum:date, notiz:note, istEinnahme:isIncome, kontoId:selectedKonto });
     persist();
     bg.remove();
     render();
@@ -987,7 +1291,7 @@ function renderRecurring(c){
         if(days<0) badge = `<span class="due-badge" style="background:var(--red-dim); color:var(--red);">${t('overdue')}</span>`;
         else if(days<=5) badge = `<span class="due-badge" style="background:var(--amber-dim); color:var(--amber);">${t('dueSoon')}</span>`;
         return `<div class="recur-row">
-          <div class="tx-icon">${KAT_ICON[w.kategorie]||'🔁'}</div>
+          <div class="tx-icon">${iconFor(w.kategorie)}</div>
           <div class="tx-info">
             <div class="name">${escapeHtml(w.name)} ${badge}</div>
             <div class="meta">${catLabel(w.kategorie)} · ${t('nextDue')}: ${w.naechstesFaellig}</div>
@@ -1007,7 +1311,7 @@ function renderRecurring(c){
     btn.onclick = ()=>{
       const w = state.data.wiederkehrend.find(x=>x.id===btn.dataset.book);
       if(!w) return;
-      state.data.buchungen.push({ id:uid(), beschreibung:w.name, betrag:w.betrag, kategorie:w.kategorie, datum:todayISO(), notiz:'', istEinnahme:w.istEinnahme });
+      state.data.buchungen.push({ id:uid(), beschreibung:w.name, betrag:w.betrag, kategorie:w.kategorie, datum:todayISO(), notiz:'', istEinnahme:w.istEinnahme, kontoId: w.kontoId || state.data.konten[0]?.id });
       const d = new Date(w.naechstesFaellig);
       d.setMonth(d.getMonth()+1);
       w.naechstesFaellig = d.toISOString().slice(0,10);
@@ -1019,6 +1323,7 @@ function renderRecurring(c){
 function openRecurringModal(){
   let selectedCat = KAT_AUSGABEN[0].key;
   let isIncome = false;
+  let selectedKonto = state.data.konten[0]?.id;
   const bg = document.createElement('div');
   bg.className='modal-bg';
   bg.innerHTML = `
@@ -1026,6 +1331,9 @@ function openRecurringModal(){
       <h3>${t('newRecurring')}</h3>
       <div class="field"><label>${t('description')}</label><input id="r-name"/></div>
       <div class="field"><label>${t('amount')}</label><input id="r-amt" type="number" step="0.01" min="0"/></div>
+      <div class="field"><label>${t('account')}</label>
+        <select id="r-konto">${state.data.konten.map(k=>`<option value="${k.id}">${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}</select>
+      </div>
       <div class="field"><label>${t('income')} / ${t('expenses')}</label>
         <div class="seg" id="r-seg">
           <button class="active" data-v="0">${t('expenses')}</button>
@@ -1034,7 +1342,7 @@ function openRecurringModal(){
       </div>
       <div class="field"><label>${t('category')}</label>
         <div class="chip-row" id="r-cats">
-          ${KAT_AUSGABEN.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.icon} ${catLabel(k.key)}</div>`).join('')}
+          ${allCats(false).map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.eltern?'↳ ':''}${k.icon} ${catLabel(k.key)}</div>`).join('')}
         </div>
       </div>
       <div class="field"><label>${t('nextDue')}</label><input id="r-date" type="date" value="${todayISO()}"/></div>
@@ -1046,14 +1354,15 @@ function openRecurringModal(){
   document.body.appendChild(bg);
   const catsEl = bg.querySelector('#r-cats');
   function refreshCats(){
-    const cats = isIncome ? KAT_EINNAHMEN : KAT_AUSGABEN;
+    const cats = allCats(isIncome);
     selectedCat = cats[0].key;
-    catsEl.innerHTML = cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.icon} ${catLabel(k.key)}</div>`).join('');
+    catsEl.innerHTML = cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.eltern?'↳ ':''}${k.icon} ${catLabel(k.key)}</div>`).join('');
     catsEl.querySelectorAll('.chip').forEach(ch=>{
       ch.onclick = ()=>{ selectedCat = ch.dataset.k; catsEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active', x===ch)); };
     });
   }
   refreshCats();
+  bg.querySelector('#r-konto').onchange = e=>{ selectedKonto = e.target.value; };
   bg.querySelectorAll('#r-seg button').forEach(b=>{
     b.onclick = ()=>{ isIncome = b.dataset.v==='1'; bg.querySelectorAll('#r-seg button').forEach(x=>x.classList.toggle('active', x===b)); refreshCats(); };
   });
@@ -1064,7 +1373,7 @@ function openRecurringModal(){
     const amt = parseFloat(bg.querySelector('#r-amt').value.replace(',','.'));
     const date = bg.querySelector('#r-date').value || todayISO();
     if(!name || !amt || amt<=0){ toast(state.lang==='en'?'Please fill description and amount.':'Bitte Beschreibung und Betrag ausfüllen.'); return; }
-    state.data.wiederkehrend.push({ id:uid(), name, betrag:round2(amt), kategorie:selectedCat, naechstesFaellig:date, istEinnahme:isIncome });
+    state.data.wiederkehrend.push({ id:uid(), name, betrag:round2(amt), kategorie:selectedCat, naechstesFaellig:date, istEinnahme:isIncome, kontoId:selectedKonto });
     persist(); bg.remove(); render();
   };
   bg.querySelector('#r-name').focus();
@@ -1106,7 +1415,7 @@ function renderPayslip(c){
   document.getElementById('p-apply').onclick = ()=>{
     const r = steuerBerechnen(payslipState.brutto, payslipState.klasse, payslipState.kirche, payslipState.kv);
     const monatName = monateFor(state.lang)[state.aktiverMonat-1];
-    state.data.buchungen.push({ id:uid(), beschreibung:monatName+' '+state.aktivesJahr+' – '+catLabel('Gehalt'), betrag:r.netto, kategorie:'Gehalt', datum:todayISO(), notiz:'', istEinnahme:true });
+    state.data.buchungen.push({ id:uid(), beschreibung:monatName+' '+state.aktivesJahr+' – '+catLabel('Gehalt'), betrag:r.netto, kategorie:'Gehalt', datum:todayISO(), notiz:'', istEinnahme:true, kontoId: state.data.konten[0]?.id });
     persist();
     toast((state.lang==='en'?'Net salary saved: ':'Nettogehalt gespeichert: ')+fmt(r.netto));
     state.tab='income'; render();
@@ -1210,7 +1519,7 @@ function renderAI(c){
       <h3>${en?'Category overview':'Kategorie-Übersicht'}</h3>
       ${catRows.length ? catRows.map(([k,v])=>`
         <div style="display:flex; justify-content:space-between; padding:7px 0; font-size:13px;">
-          <span>${KAT_ICON[k]||''} ${catLabel(k)}</span>
+          <span>${iconFor(k)} ${catLabel(k)}</span>
           <span style="color:var(--muted);">${v} ${en?'transactions':'Buchungen'}</span>
         </div>`).join('') : `<div class="empty-state">${t('noData')}</div>`}
     </div>
@@ -1220,6 +1529,15 @@ function renderAI(c){
 /* ---------------------------- SETTINGS -------------------------------------- */
 function renderSettings(c){
   c.innerHTML = `
+    <div class="card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div class="lbl" style="display:flex; align-items:center; gap:8px;">
+          ${isPro() ? '⭐ ' + t('planPro') : '🆓 ' + t('planFree')}
+        </div>
+        <div class="desc">${isPro() ? t('planProDesc') : t('planFreeDesc')}</div>
+      </div>
+      ${!isPro() ? `<button class="btn btn-primary btn-sm" id="btn-upgrade">⭐ ${t('upgradeNow')}</button>` : ''}
+    </div>
     <div class="card" style="margin-bottom:16px;">
       <div class="settings-row">
         <div><div class="lbl">${t('theme')}</div><div class="desc">${state.lang==='en'?'Choose your visual style':'Wähle dein Design'}</div></div>
@@ -1247,6 +1565,11 @@ function renderSettings(c){
         <input type="file" id="file-import" accept=".csv,text/csv" style="display:none;"/>
       </div>
     </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:10px;">${t('manageCategories')}</h3>
+      <div id="cat-manage"></div>
+      <button class="btn btn-ghost btn-sm" id="btn-add-cat" style="margin-top:10px;">+ ${t('addCategory')}</button>
+    </div>
     <div class="card">
       <div class="settings-row">
         <div><div class="lbl" style="color:var(--red);">${t('deleteAccount')}</div><div class="desc">${state.lang==='en'?'Permanently delete all your bookings, goals and settings.':'Löscht alle deine Buchungen, Ziele und Einstellungen unwiderruflich.'}</div></div>
@@ -1262,21 +1585,100 @@ function renderSettings(c){
   });
   document.getElementById('btn-export').onclick = exportCsv;
   document.getElementById('file-import').addEventListener('change', importCsv);
+  const upBtn = document.getElementById('btn-upgrade');
+  if(upBtn) upBtn.onclick = ()=> toast(t('upgradeComingSoon'));
+  renderCategoryManager();
+  document.getElementById('btn-add-cat').onclick = openCategoryModal;
   document.getElementById('btn-del-account').onclick = async ()=>{
     if(!confirm(state.lang==='en'
       ? 'Really delete all your data? This cannot be undone. (Your login itself stays; contact the site admin to remove it entirely.)'
       : 'Wirklich alle Daten löschen? Das kann nicht rückgängig gemacht werden. (Der Login selbst bleibt bestehen — für die komplette Löschung des Kontos wende dich an den Admin.)')) return;
+    const fresh = emptyUserData();
     await sb.from('user_data').update({
-      buchungen: [], sparziele: [], wiederkehrend: [], settings: {theme:'dark', lang:'de'},
+      buchungen: [], sparziele: [], wiederkehrend: [], konten: fresh.konten,
+      kategorien: fresh.kategorien, settings: {theme:'dark', lang:'de'},
       updated_at: new Date().toISOString()
     }).eq('id', state.authId);
     doLogout();
   };
 }
 
+function renderCategoryManager(){
+  const el = document.getElementById('cat-manage');
+  const rows = [];
+  ['ausgaben','einnahmen'].forEach(typ=>{
+    const isIncome = typ==='einnahmen';
+    state.data.kategorien[typ].forEach(k=>{
+      rows.push(`<div class="settings-row">
+        <div><div class="lbl">${k.icon} ${catLabel(k.key)}</div><div class="desc">${isIncome?t('income'):t('expenses')}${k.eltern?' · '+t('subcategoryOf')+' '+catLabel(k.eltern):''}</div></div>
+        <button class="icon-btn" data-delcat="${typ}:${k.key}" title="${t('delete')}">🗑</button>
+      </div>`);
+    });
+  });
+  el.innerHTML = rows.length ? rows.join('') : `<div class="desc" style="padding:8px 0;">${t('noCustomCategories')}</div>`;
+  el.querySelectorAll('[data-delcat]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [typ,key] = btn.dataset.delcat.split(':');
+      const inUse = state.data.buchungen.some(b=>b.kategorie===key) || state.data.wiederkehrend.some(w=>w.kategorie===key);
+      if(inUse && !confirm(t('categoryInUseConfirm'))) return;
+      state.data.kategorien[typ] = state.data.kategorien[typ].filter(k=>k.key!==key);
+      persist(); renderCategoryManager();
+    };
+  });
+}
+
+function openCategoryModal(){
+  let isIncome = false;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  const parentOptions = ()=> allCats(isIncome).filter(k=>!k.eltern);
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('addCategory')}</h3>
+      <div class="field"><label>${t('income')} / ${t('expenses')}</label>
+        <div class="seg" id="c-seg">
+          <button class="active" data-v="0">${t('expenses')}</button>
+          <button data-v="1">${t('income')}</button>
+        </div>
+      </div>
+      <div class="field"><label>${t('categoryName')}</label><input id="c-name"/></div>
+      <div class="field"><label>${t('categoryIcon')}</label><input id="c-icon" maxlength="2" placeholder="💠" value="💠" style="width:70px; text-align:center;"/></div>
+      <div class="field"><label>${t('parentCategory')}</label>
+        <select id="c-parent"><option value="">${t('none')}</option>${parentOptions().map(k=>`<option value="${k.key}">${k.icon} ${catLabel(k.key)}</option>`).join('')}</select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="c-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="c-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  function refreshParents(){
+    bg.querySelector('#c-parent').innerHTML = `<option value="">${t('none')}</option>${parentOptions().map(k=>`<option value="${k.key}">${k.icon} ${catLabel(k.key)}</option>`).join('')}`;
+  }
+  bg.querySelectorAll('#c-seg button').forEach(b=>{
+    b.onclick = ()=>{ isIncome = b.dataset.v==='1'; bg.querySelectorAll('#c-seg button').forEach(x=>x.classList.toggle('active', x===b)); refreshParents(); };
+  });
+  bg.querySelector('#c-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#c-save').onclick = ()=>{
+    const name = bg.querySelector('#c-name').value.trim();
+    const icon = bg.querySelector('#c-icon').value.trim() || '💠';
+    const eltern = bg.querySelector('#c-parent').value || null;
+    if(!name){ toast(t('fillAllFields')); return; }
+    const key = name; // Kategorie-Schlüssel = eingegebener Name (muss je Typ eindeutig sein)
+    const list = isIncome ? state.data.kategorien.einnahmen : state.data.kategorien.ausgaben;
+    if([...allCats(isIncome)].some(k=>k.key.toLowerCase()===key.toLowerCase())){
+      toast(t('categoryExists')); return;
+    }
+    list.push({ key, icon, eltern });
+    persist(); bg.remove(); renderCategoryManager();
+  };
+  bg.querySelector('#c-name').focus();
+}
+
 function exportCsv(){
-  const rows = [['Datum','Beschreibung','Betrag','Kategorie','Notiz','IstEinnahme']];
-  state.data.buchungen.forEach(b=> rows.push([b.datum,b.beschreibung,b.betrag,b.kategorie,b.notiz||'',b.istEinnahme]));
+  const rows = [['Datum','Beschreibung','Betrag','Kategorie','Notiz','IstEinnahme','Konto']];
+  state.data.buchungen.forEach(b=> rows.push([b.datum,b.beschreibung,b.betrag,b.kategorie,b.notiz||'',b.istEinnahme,kontoName(b.kontoId)]));
   const csv = rows.map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a');
@@ -1314,18 +1716,25 @@ function importCsv(ev){
       const text = reader.result.replace(/\r/g,'');
       const lines = text.split('\n').filter(l=>l.trim().length);
       if(lines.length<2) throw new Error('empty');
-      // erste Zeile ist die Kopfzeile (Datum;Beschreibung;Betrag;Kategorie;Notiz;IstEinnahme) — wird übersprungen
+      // erste Zeile ist die Kopfzeile (Datum;Beschreibung;Betrag;Kategorie;Notiz;IstEinnahme[;Konto]) — wird übersprungen
+      const defaultKontoId = state.data.konten[0]?.id;
       let importedCount = 0;
       for(let i=1;i<lines.length;i++){
         const cols = parseCsvLine(lines[i]);
         if(cols.length<6) continue;
-        const [datum, beschreibung, betragRaw, kategorie, notiz, istEinnahmeRaw] = cols;
+        const [datum, beschreibung, betragRaw, kategorie, notiz, istEinnahmeRaw, kontoNameRaw] = cols;
         const betrag = parseFloat(String(betragRaw).replace(',','.'));
         if(!datum || !beschreibung || isNaN(betrag)) continue;
         const istEinnahme = String(istEinnahmeRaw).trim().toLowerCase()==='true';
+        // Konto anhand des Namens wiederfinden (falls Spalte vorhanden), sonst Standardkonto
+        let kontoId = defaultKontoId;
+        if(kontoNameRaw){
+          const match = state.data.konten.find(k=>k.name.toLowerCase()===String(kontoNameRaw).trim().toLowerCase());
+          if(match) kontoId = match.id;
+        }
         state.data.buchungen.push({
           id: uid(), beschreibung, betrag: round2(betrag),
-          kategorie: kategorie || 'Sonstiges', datum, notiz: notiz||'', istEinnahme
+          kategorie: kategorie || 'Sonstiges', datum, notiz: notiz||'', istEinnahme, kontoId
         });
         importedCount++;
       }

@@ -77,7 +77,8 @@ const L = {
     budgetOverBy:"überschritten um", suggestBudgets:"Vorschlag berechnen", suggestionsAdded:"Budgets vorgeschlagen",
     noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt.",
     subsPerMonth:"Abos & Wiederkehrend / Monat", subsPerYear:"Hochgerechnet / Jahr", interval:"Intervall",
-    monthly:"Monatlich", yearly:"Jährlich", reminderDays:"Erinnerung (Tage vorher)", cancelBy:"Kündigungsfrist"
+    monthly:"Monatlich", yearly:"Jährlich", reminderDays:"Erinnerung (Tage vorher)", cancelBy:"Kündigungsfrist",
+    downloadReport:"Monatsbericht (PDF)", allTime:"Gesamter Zeitraum", thisMonthScope:"Aktueller Monat"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -127,7 +128,8 @@ const L = {
     budgetOverBy:"over by", suggestBudgets:"Suggest budgets", suggestionsAdded:"Budgets suggested",
     noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget.",
     subsPerMonth:"Subscriptions & recurring / month", subsPerYear:"Projected / year", interval:"Interval",
-    monthly:"Monthly", yearly:"Yearly", reminderDays:"Reminder (days before)", cancelBy:"Cancel by"
+    monthly:"Monthly", yearly:"Yearly", reminderDays:"Reminder (days before)", cancelBy:"Cancel by",
+    downloadReport:"Monthly report (PDF)", allTime:"All time", thisMonthScope:"Current month"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -177,7 +179,8 @@ const L = {
     budgetOverBy:"تجاوزت بمقدار", suggestBudgets:"اقتراح ميزانية", suggestionsAdded:"تم اقتراح ميزانيات",
     noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل.",
     subsPerMonth:"الاشتراكات والمدفوعات المتكررة / شهريًا", subsPerYear:"المتوقع / سنويًا", interval:"الفاصل الزمني",
-    monthly:"شهري", yearly:"سنوي", reminderDays:"تذكير (أيام قبل الاستحقاق)", cancelBy:"مهلة الإلغاء"
+    monthly:"شهري", yearly:"سنوي", reminderDays:"تذكير (أيام قبل الاستحقاق)", cancelBy:"مهلة الإلغاء",
+    downloadReport:"تقرير شهري (PDF)", allTime:"كل الفترة", thisMonthScope:"الشهر الحالي"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -1210,6 +1213,9 @@ function renderDashboard(c){
   const notifs = buildNotifications();
 
   c.innerHTML = `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+      <button class="btn btn-ghost btn-sm" id="btn-monthly-report">📄 ${t('downloadReport')}</button>
+    </div>
     <div class="grid grid-4" style="margin-bottom:22px;">
       ${kpiCard(t('totalIncome'), fmt(ein), 'pos', '📈')}
       ${kpiCard(t('totalExpenses'), fmt(aus), 'neg', '📉')}
@@ -1240,6 +1246,7 @@ function renderDashboard(c){
       ${txList(buf.slice(0,8))}
     </div>
   `;
+  document.getElementById('btn-monthly-report').onclick = generateMonthlyReportPdf;
 }
 
 function kpiCard(label, val, cls, icon){
@@ -1826,8 +1833,18 @@ function renderSettings(c){
         </div>
       </div>
       <div class="settings-row">
-        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download all bookings as CSV':state.lang==='ar'?'تنزيل جميع العمليات كملف CSV':'Alle Buchungen als CSV herunterladen'}</div></div>
-        <button class="btn btn-ghost btn-sm" id="btn-export">⬇ CSV</button>
+        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download bookings as CSV':state.lang==='ar'?'تنزيل العمليات كملف CSV':'Buchungen als CSV herunterladen'}</div></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="export-scope" style="background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:8px 10px; font-size:12.5px;">
+            <option value="all">${t('allTime')}</option>
+            <option value="month">${t('thisMonthScope')}</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="btn-export">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">${t('downloadReport')}</div><div class="desc">${state.lang==='en'?'PDF summary for the currently selected month':state.lang==='ar'?'ملخص PDF للشهر المحدد حاليًا':'PDF-Zusammenfassung für den aktuell gewählten Monat'}</div></div>
+        <button class="btn btn-ghost btn-sm" id="btn-report">📄 PDF</button>
       </div>
       <div class="settings-row">
         <div><div class="lbl">${t('importCsv')}</div><div class="desc">${state.lang==='en'?'Add bookings from a CSV file (same format as export)':state.lang==='ar'?'إضافة عمليات من ملف CSV (بنفس تنسيق التصدير)':'Buchungen aus einer CSV-Datei hinzufügen (gleiches Format wie beim Export)'}</div></div>
@@ -1853,7 +1870,8 @@ function renderSettings(c){
   document.querySelectorAll('#lang-seg button').forEach(b=>{
     b.onclick = ()=>{ state.lang = b.dataset.v; persist(); render(); };
   });
-  document.getElementById('btn-export').onclick = exportCsv;
+  document.getElementById('btn-export').onclick = ()=> exportCsv(document.getElementById('export-scope').value);
+  document.getElementById('btn-report').onclick = generateMonthlyReportPdf;
   document.getElementById('file-import').addEventListener('change', importCsv);
   const upBtn = document.getElementById('btn-upgrade');
   if(upBtn) upBtn.onclick = ()=> toast(t('upgradeComingSoon'));
@@ -1946,15 +1964,147 @@ function openCategoryModal(){
   bg.querySelector('#c-name').focus();
 }
 
-function exportCsv(){
+function exportCsv(scope){
   const rows = [['Datum','Beschreibung','Betrag','Kategorie','Notiz','IstEinnahme','Konto']];
-  state.data.buchungen.forEach(b=> rows.push([b.datum,b.beschreibung,b.betrag,b.kategorie,b.notiz||'',b.istEinnahme,kontoName(b.kontoId)]));
+  const quelle = scope==='month' ? gefilterteBuchungen() : state.data.buchungen;
+  quelle.forEach(b=> rows.push([b.datum,b.beschreibung,b.betrag,b.kategorie,b.notiz||'',b.istEinnahme,kontoName(b.kontoId)]));
   const csv = rows.map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'finanzmanager_export.csv';
+  a.download = scope==='month'
+    ? `finanzmanager_${state.aktivesJahr}-${String(state.aktiverMonat).padStart(2,'0')}.csv`
+    : 'finanzmanager_export.csv';
   a.click();
+}
+
+/* ---------------------------- PDF MONATSBERICHT ------------------------------ */
+function generateMonthlyReportPdf(){
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    toast(state.lang==='en'
+      ? 'PDF library could not be loaded (maybe blocked by a browser extension / Brave Shields).'
+      : 'PDF-Bibliothek konnte nicht geladen werden (evtl. durch Browser-Erweiterung / Brave Shields blockiert).');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 16;
+  let y = 20;
+
+  function ensureSpace(need){
+    if(y + need > pageH - 16){ doc.addPage(); y = 20; }
+  }
+  function sectionTitle(txt){
+    ensureSpace(12);
+    doc.setFont(undefined, 'bold'); doc.setFontSize(12); doc.setTextColor(30,40,70);
+    doc.text(txt, marginX, y);
+    y += 3; doc.setDrawColor(220,224,240); doc.line(marginX, y, pageW-marginX, y);
+    y += 6;
+  }
+  function tableRow(cols, widths, opts={}){
+    ensureSpace(7);
+    doc.setFont(undefined, opts.bold ? 'bold' : 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...(opts.color || [40,44,60]));
+    let x = marginX;
+    cols.forEach((txt,i)=>{
+      doc.text(String(txt), x, y, { maxWidth: widths[i]-2 });
+      x += widths[i];
+    });
+    y += 6;
+  }
+
+  const buf = gefilterteBuchungen();
+  const ein = summeEin(buf), aus = summeAus(buf), bilanz = ein-aus;
+  const sparquote = ein>0 ? ((ein-aus)/ein*100) : 0;
+  const monLabel = monateFor(state.lang)[state.aktiverMonat-1] + ' ' + state.aktivesJahr;
+
+  // --- Kopf ---
+  doc.setFont(undefined,'bold'); doc.setFontSize(18); doc.setTextColor(20,26,51);
+  doc.text('FinanzManager', marginX, y); y += 8;
+  doc.setFont(undefined,'normal'); doc.setFontSize(11); doc.setTextColor(90,98,130);
+  doc.text(`${t('transactions')} — ${monLabel}`, marginX, y); y += 5;
+  doc.text(`${state.displayName || ''}`, marginX, y); y += 10;
+
+  // --- Kennzahlen ---
+  sectionTitle(state.lang==='en' ? 'Summary' : 'Übersicht');
+  tableRow([t('totalIncome'), fmt(ein)], [90,90]);
+  tableRow([t('totalExpenses'), fmt(aus)], [90,90]);
+  tableRow([t('balance'), fmt(bilanz)], [90,90], { bold:true, color: bilanz>=0?[0,140,90]:[190,40,60] });
+  tableRow([t('savingsRate'), sparquote.toFixed(1)+'%'], [90,90]);
+  y += 4;
+
+  // --- Ausgaben nach Kategorie ---
+  const katMap = {};
+  buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMap[b.kategorie]=(katMap[b.kategorie]||0)+b.betrag);
+  const katEntries = Object.entries(katMap).sort((a,b)=>b[1]-a[1]);
+  if(katEntries.length){
+    sectionTitle(state.lang==='en' ? 'Expenses by category' : 'Ausgaben nach Kategorie');
+    tableRow([t('category'), t('amount'), '%'], [90,50,40], { bold:true });
+    katEntries.forEach(([kat,val])=>{
+      tableRow([catLabel(kat), fmt(val), (val/aus*100).toFixed(1)+'%'], [90,50,40]);
+    });
+    y += 4;
+  }
+
+  // --- Budget-Status ---
+  const bd = state.data.budgets;
+  if(bd.gesamt!=null || bd.kategorien.length){
+    sectionTitle(t('budgetTab'));
+    if(bd.gesamt!=null){
+      const over = aus>bd.gesamt;
+      tableRow([t('overallBudget'), fmt(aus)+' / '+fmt(bd.gesamt)], [90,90], { color: over?[190,40,60]:[40,44,60] });
+    }
+    bd.kategorien.forEach(entry=>{
+      const spent = katMap[entry.kategorie]||0;
+      const over = spent>entry.betrag;
+      tableRow([catLabel(entry.kategorie), fmt(spent)+' / '+fmt(entry.betrag)], [90,90], { color: over?[190,40,60]:[40,44,60] });
+    });
+    y += 4;
+  }
+
+  // --- Konten ---
+  sectionTitle(t('accounts'));
+  tableRow([t('account'), t('totalBalance')], [110,70], { bold:true });
+  state.data.konten.forEach(k=> tableRow([k.name, fmt(kontoSaldo(k.id))], [110,70]));
+  tableRow([t('totalBalance'), fmt(gesamtSaldo())], [110,70], { bold:true });
+  y += 4;
+
+  // --- Abos / wiederkehrend ---
+  if(state.data.wiederkehrend.length){
+    sectionTitle(t('recurring'));
+    tableRow([t('description'), t('amount'), t('interval'), t('nextDue')], [60,40,35,45], { bold:true });
+    state.data.wiederkehrend.forEach(w=>{
+      tableRow([w.name, (w.istEinnahme?'+':'-')+fmt(w.betrag), w.intervall==='jaehrlich'?t('yearly'):t('monthly'), w.naechstesFaellig], [60,40,35,45]);
+    });
+    y += 4;
+  }
+
+  // --- Buchungen dieses Monats ---
+  if(buf.length){
+    sectionTitle(t('transactions'));
+    tableRow([t('date'), t('description'), t('category'), t('amount')], [26,70,50,34], { bold:true });
+    buf.slice(0,40).forEach(b=>{
+      tableRow([b.datum, b.beschreibung.slice(0,32), catLabel(b.kategorie), (b.istEinnahme?'+':'-')+fmt(b.betrag)], [26,70,50,34]);
+    });
+    if(buf.length>40){
+      doc.setFont(undefined,'italic'); doc.setFontSize(8.5); doc.setTextColor(140,146,170);
+      doc.text(state.lang==='en' ? `… and ${buf.length-40} more` : `… und ${buf.length-40} weitere`, marginX, y);
+      y += 6;
+    }
+  }
+
+  // --- Fußzeile auf jeder Seite ---
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    doc.setFont(undefined,'normal'); doc.setFontSize(8); doc.setTextColor(160,166,190);
+    doc.text(`FinanzManager · ${new Date().toLocaleDateString(state.lang==='en'?'en-US':'de-DE')} · ${p}/${pageCount}`, marginX, pageH-10);
+  }
+
+  doc.save(`finanzmanager_bericht_${state.aktivesJahr}-${String(state.aktiverMonat).padStart(2,'0')}.pdf`);
 }
 
 // Sehr simpler CSV-Parser passend zum Export-Format oben (Semikolon-getrennt,

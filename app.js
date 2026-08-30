@@ -70,7 +70,12 @@ const L = {
     categoryInUseConfirm:"Diese Kategorie wird bereits verwendet. Trotzdem löschen? (Vorhandene Buchungen behalten den Namen.)",
     categoryExists:"Diese Kategorie gibt es schon.", planFree:"Free-Plan", planPro:"Pro-Plan",
     planFreeDesc:`Kostenlos, max. ${FREE_KONTEN_LIMIT} Konten.`, planProDesc:"Unbegrenzte Konten & alle Funktionen freigeschaltet.",
-    upgradeNow:"Upgrade auf Pro", upgradeComingSoon:"Die Bezahlfunktion ist technisch vorbereitet, aber noch nicht aktiv geschaltet."
+    upgradeNow:"Upgrade auf Pro", upgradeComingSoon:"Die Bezahlfunktion ist technisch vorbereitet, aber noch nicht aktiv geschaltet.",
+    budgetTab:"Budget", overallBudget:"Gesamtbudget", overallBudgetDesc:"Monatliches Limit für alle Ausgaben zusammen.",
+    setOverallBudget:"Festlegen", noOverallBudget:"Noch kein Gesamtbudget festgelegt.", categoryBudgets:"Budgets pro Kategorie",
+    addBudget:"Budget hinzufügen", noBudgets:"Noch keine Budgets angelegt.", budgetLeft:"noch übrig",
+    budgetOverBy:"überschritten um", suggestBudgets:"Vorschlag berechnen", suggestionsAdded:"Budgets vorgeschlagen",
+    noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -113,7 +118,12 @@ const L = {
     categoryInUseConfirm:"This category is already in use. Delete anyway? (Existing bookings keep the name.)",
     categoryExists:"This category already exists.", planFree:"Free plan", planPro:"Pro plan",
     planFreeDesc:`Free, up to ${FREE_KONTEN_LIMIT} accounts.`, planProDesc:"Unlimited accounts & all features unlocked.",
-    upgradeNow:"Upgrade to Pro", upgradeComingSoon:"The payment flow is technically ready but not switched on yet."
+    upgradeNow:"Upgrade to Pro", upgradeComingSoon:"The payment flow is technically ready but not switched on yet.",
+    budgetTab:"Budget", overallBudget:"Overall budget", overallBudgetDesc:"Monthly limit for all expenses combined.",
+    setOverallBudget:"Set", noOverallBudget:"No overall budget set yet.", categoryBudgets:"Budgets per category",
+    addBudget:"Add budget", noBudgets:"No budgets set up yet.", budgetLeft:"left",
+    budgetOverBy:"over by", suggestBudgets:"Suggest budgets", suggestionsAdded:"Budgets suggested",
+    noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -156,7 +166,12 @@ const L = {
     categoryInUseConfirm:"هذه الفئة مستخدمة بالفعل. هل تريد حذفها على أي حال؟ (العمليات الحالية تحتفظ بالاسم.)",
     categoryExists:"هذه الفئة موجودة بالفعل.", planFree:"الخطة المجانية", planPro:"خطة Pro",
     planFreeDesc:`مجانية، حتى ${FREE_KONTEN_LIMIT} حسابات.`, planProDesc:"حسابات غير محدودة وجميع الميزات مفعّلة.",
-    upgradeNow:"الترقية إلى Pro", upgradeComingSoon:"نظام الدفع جاهز تقنيًا لكنه غير مفعّل بعد."
+    upgradeNow:"الترقية إلى Pro", upgradeComingSoon:"نظام الدفع جاهز تقنيًا لكنه غير مفعّل بعد.",
+    budgetTab:"الميزانية", overallBudget:"الميزانية الإجمالية", overallBudgetDesc:"الحد الشهري لجميع المصروفات مجتمعة.",
+    setOverallBudget:"تحديد", noOverallBudget:"لم يتم تحديد ميزانية إجمالية بعد.", categoryBudgets:"ميزانيات حسب الفئة",
+    addBudget:"إضافة ميزانية", noBudgets:"لا توجد ميزانيات بعد.", budgetLeft:"متبقٍ",
+    budgetOverBy:"تجاوزت بمقدار", suggestBudgets:"اقتراح ميزانية", suggestionsAdded:"تم اقتراح ميزانيات",
+    noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -235,6 +250,7 @@ const Store = {
         wiederkehrend: data.wiederkehrend || [],
         konten: data.konten || [],
         kategorien: data.kategorien || { ausgaben:[], einnahmen:[] },
+        budgets: data.budgets || { gesamt:null, kategorien:[] },
         settings: data.settings || { theme:'dark', lang:'de' }
       });
     }catch(e){ console.error('getUserData Fehler:', e); return null; }
@@ -244,7 +260,7 @@ const Store = {
       id: userId, display_name: displayName,
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, settings: data.settings
+      kategorien: data.kategorien, budgets: data.budgets, settings: data.settings
     });
     if(error) console.error('createUserData Fehler:', error);
     return !error;
@@ -253,7 +269,7 @@ const Store = {
     const { error } = await sb.from('user_data').update({
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, settings: data.settings,
+      kategorien: data.kategorien, budgets: data.budgets, settings: data.settings,
       updated_at: new Date().toISOString()
     }).eq('id', userId);
     if(error) console.error('saveUserData Fehler:', error);
@@ -284,6 +300,7 @@ function emptyUserData(){
     wiederkehrend: [], // {id, name, betrag, kategorie, naechstesFaellig(ISO), istEinnahme, notiz, kontoId}
     konten: [{ id: uid(), name: "Hauptkonto", typ: "bank", startsaldo: 0 }], // {id, name, typ, startsaldo}
     kategorien: { ausgaben: [], einnahmen: [] }, // eigene Kategorien: {key, icon, eltern}
+    budgets: { gesamt: null, kategorien: [] }, // gesamt: Zahl|null; kategorien: [{kategorie, betrag}]
     settings: { theme:"dark", lang:"de" }
   };
 }
@@ -303,6 +320,8 @@ function migrateData(data){
   if(!data.kategorien) data.kategorien = { ausgaben:[], einnahmen:[] };
   if(!data.kategorien.ausgaben) data.kategorien.ausgaben = [];
   if(!data.kategorien.einnahmen) data.kategorien.einnahmen = [];
+  if(!data.budgets) data.budgets = { gesamt:null, kategorien:[] };
+  if(!data.budgets.kategorien) data.budgets.kategorien = [];
   data.__migrated = changed;
   return data;
 }
@@ -435,7 +454,7 @@ function steuerBerechnen(brutto, klasse, kirche, kvZusatz){
 const ICO = {
   dashboard:"📊", income:"💰", expenses:"🧾", goals:"🎯", recurring:"🔁",
   payslip:"🧮", ai:"✨", settings:"⚙️", chevronL:"‹", chevronR:"›", close:"✕",
-  trash:"🗑", plus:"+", logout:"⏻", konten:"🏦"
+  trash:"🗑", plus:"+", logout:"⏻", konten:"🏦", budget:"📅"
 };
 
 /* ---------------------------- ROOT RENDER --------------------------------- */
@@ -708,6 +727,7 @@ function renderApp(){
     ['konten', ICO.konten, t('accounts')],
     ['income', ICO.income, t('income')],
     ['expenses', ICO.expenses, t('expenses')],
+    ['budget', ICO.budget, t('budgetTab')],
     ['goals', ICO.goals, t('goals')],
     ['recurring', ICO.recurring, t('recurring')],
     ['payslip', ICO.payslip, t('payslip')],
@@ -743,10 +763,11 @@ function toggleSidebar(){
 function renderTopbar(){
   const tb = document.getElementById('topbar');
   const titles = {
-    dashboard:t('dashboard'), konten:t('accounts'), income:t('income'), expenses:t('expenses'), goals:t('goals'),
+    dashboard:t('dashboard'), konten:t('accounts'), income:t('income'), expenses:t('expenses'),
+    budget:t('budgetTab'), goals:t('goals'),
     recurring:t('recurring'), payslip:t('payslip'), ai:t('ai'), settings:t('settings')
   };
-  const needsMonthNav = ['dashboard','income','expenses','ai'].includes(state.tab);
+  const needsMonthNav = ['dashboard','income','expenses','budget','ai'].includes(state.tab);
   const monLabel = monateFor(state.lang)[state.aktiverMonat-1] + ' ' + state.aktivesJahr;
   tb.innerHTML = `
     <div style="display:flex; align-items:center; gap:12px; min-width:0;">
@@ -776,6 +797,7 @@ function renderTab(){
   if(state.tab==='konten') return renderKonten(c);
   if(state.tab==='income') return renderTxTab(c, true);
   if(state.tab==='expenses') return renderTxTab(c, false);
+  if(state.tab==='budget') return renderBudget(c);
   if(state.tab==='goals') return renderGoals(c);
   if(state.tab==='recurring') return renderRecurring(c);
   if(state.tab==='payslip') return renderPayslip(c);
@@ -931,6 +953,188 @@ function openTransferModal(){
   bg.querySelector('#tr-amt').focus();
 }
 
+/* ---------------------------- BUDGET ---------------------------------------- */
+function budgetsFuerMonat(){
+  // Ausgaben je Kategorie im aktiven Monat (Überweisungen zählen nicht mit)
+  const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
+  const spentByCat = {};
+  buf.forEach(b=> spentByCat[b.kategorie] = (spentByCat[b.kategorie]||0)+b.betrag);
+  const gesamtAusgegeben = Object.values(spentByCat).reduce((s,v)=>s+v,0);
+  return { spentByCat, gesamtAusgegeben };
+}
+
+function renderBudget(c){
+  const { spentByCat, gesamtAusgegeben } = budgetsFuerMonat();
+  const b = state.data.budgets;
+
+  const gesamtCard = `
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <div>
+          <h3 style="margin:0;">${t('overallBudget')}</h3>
+          <div class="sub" style="color:var(--muted); font-size:12px; margin-top:2px;">${t('overallBudgetDesc')}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-set-overall">${b.gesamt!=null ? t('edit') : t('setOverallBudget')}</button>
+      </div>
+      ${b.gesamt!=null ? budgetBar(gesamtAusgegeben, b.gesamt) : `<div class="desc">${t('noOverallBudget')}</div>`}
+    </div>`;
+
+  const usedCats = new Set(b.kategorien.map(x=>x.kategorie));
+  const suggestable = Object.keys(spentByCat).some(k=>!usedCats.has(k));
+
+  c.innerHTML = `
+    ${gesamtCard}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+      <h3 style="margin:0;">${t('categoryBudgets')}</h3>
+      <div style="display:flex; gap:10px;">
+        ${suggestable ? `<button class="btn btn-ghost btn-sm" id="btn-suggest">💡 ${t('suggestBudgets')}</button>` : ''}
+        <button class="btn btn-primary btn-sm" id="btn-add-budget">+ ${t('addBudget')}</button>
+      </div>
+    </div>
+    ${b.kategorien.length ? `<div class="grid grid-2" id="budget-grid"></div>` : `<div class="empty-state"><div class="big">📅</div>${t('noBudgets')}</div>`}
+  `;
+  document.getElementById('btn-set-overall').onclick = ()=>openOverallBudgetModal();
+  document.getElementById('btn-add-budget').onclick = ()=>openBudgetModal();
+  const suggBtn = document.getElementById('btn-suggest');
+  if(suggBtn) suggBtn.onclick = suggestBudgets;
+
+  if(b.kategorien.length){
+    const grid = document.getElementById('budget-grid');
+    grid.innerHTML = b.kategorien.map(entry=>{
+      const spent = spentByCat[entry.kategorie] || 0;
+      return `<div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div class="name" style="font-weight:700; font-size:14px;">${iconFor(entry.kategorie)} ${catLabel(entry.kategorie)}</div>
+          <div style="display:flex; gap:6px;">
+            <button class="icon-btn" data-edit="${entry.kategorie}" title="${t('edit')}">✎</button>
+            <button class="icon-btn" data-del="${entry.kategorie}" title="${t('delete')}">🗑</button>
+          </div>
+        </div>
+        ${budgetBar(spent, entry.betrag)}
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('[data-edit]').forEach(btn=>{
+      btn.onclick = ()=> openBudgetModal(b.kategorien.find(x=>x.kategorie===btn.dataset.edit));
+    });
+    grid.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{
+        state.data.budgets.kategorien = state.data.budgets.kategorien.filter(x=>x.kategorie!==btn.dataset.del);
+        persist(); render();
+      };
+    });
+  }
+}
+
+function budgetBar(spent, limit){
+  const pct = limit>0 ? Math.min(100, spent/limit*100) : 0;
+  const over = spent>limit;
+  const remaining = round2(limit-spent);
+  const color = over ? 'var(--red)' : pct>=80 ? 'var(--amber)' : 'var(--green)';
+  return `
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+    <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12.5px;">
+      <span style="color:var(--muted);">${fmt(spent)} ${t('of')} ${fmt(limit)}</span>
+      <span style="font-weight:700; color:${over?'var(--red)':'var(--fg)'};">
+        ${over ? t('budgetOverBy')+' '+fmt(Math.abs(remaining)) : fmt(remaining)+' '+t('budgetLeft')}
+      </span>
+    </div>`;
+}
+
+function openOverallBudgetModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('overallBudget')}</h3>
+      <div class="field"><label>${t('amount')}</label><input id="ob-amt" type="number" step="0.01" min="0" value="${state.data.budgets.gesamt ?? ''}"/></div>
+      <div class="modal-actions">
+        ${state.data.budgets.gesamt!=null ? `<button class="btn btn-danger" id="ob-remove">${t('delete')}</button>` : ''}
+        <button class="btn btn-ghost" id="ob-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="ob-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#ob-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  const rm = bg.querySelector('#ob-remove');
+  if(rm) rm.onclick = ()=>{ state.data.budgets.gesamt = null; persist(); bg.remove(); render(); };
+  bg.querySelector('#ob-save').onclick = ()=>{
+    const amt = parseFloat(bg.querySelector('#ob-amt').value.replace(',','.'));
+    if(!amt || amt<=0){ toast(t('fillAllFields')); return; }
+    state.data.budgets.gesamt = round2(amt);
+    persist(); bg.remove(); render();
+  };
+  bg.querySelector('#ob-amt').focus();
+}
+
+function openBudgetModal(existing){
+  const cats = allCats(false).filter(k=> existing ? true : !state.data.budgets.kategorien.some(x=>x.kategorie===k.key));
+  if(!existing && cats.length===0){ toast(t('allCategoriesHaveBudget')); return; }
+  let selectedCat = existing ? existing.kategorie : cats[0].key;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${existing ? t('edit') : t('addBudget')}</h3>
+      <div class="field"><label>${t('category')}</label>
+        <div class="chip-row" id="bd-cats">
+          ${cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.icon} ${catLabel(k.key)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>${t('amount')}</label><input id="bd-amt" type="number" step="0.01" min="0" value="${existing?existing.betrag:''}"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="bd-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="bd-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelectorAll('#bd-cats .chip').forEach(ch=>{
+    ch.onclick = ()=>{ selectedCat = ch.dataset.k; bg.querySelectorAll('#bd-cats .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
+  });
+  bg.querySelector('#bd-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#bd-save').onclick = ()=>{
+    const amt = parseFloat(bg.querySelector('#bd-amt').value.replace(',','.'));
+    if(!amt || amt<=0){ toast(t('fillAllFields')); return; }
+    if(existing){
+      existing.betrag = round2(amt);
+    } else {
+      state.data.budgets.kategorien.push({ kategorie: selectedCat, betrag: round2(amt) });
+    }
+    persist(); bg.remove(); render();
+  };
+}
+
+// Schlägt Budgets vor, indem der Durchschnitts-Verbrauch der letzten 3 Monate
+// je Kategorie (ohne bereits budgetierte Kategorien) berechnet wird — auf
+// ca. 5 € aufgerundet und mit 10% Puffer, damit es kein knapper Deckel ist.
+function suggestBudgets(){
+  const usedCats = new Set(state.data.budgets.kategorien.map(x=>x.kategorie));
+  const sums = {};
+  for(let i=0;i<3;i++){
+    let m = state.aktiverMonat - i, y = state.aktivesJahr;
+    while(m<1){ m+=12; y--; }
+    state.data.buchungen.filter(b=>{
+      const d = new Date(b.datum);
+      return !b.istEinnahme && !b.istUeberweisung && d.getFullYear()===y && (d.getMonth()+1)===m;
+    }).forEach(b=> sums[b.kategorie] = (sums[b.kategorie]||0)+b.betrag);
+  }
+  let added = 0;
+  Object.entries(sums).forEach(([kat, total])=>{
+    if(usedCats.has(kat)) return;
+    const avg = total/3;
+    const vorschlag = Math.ceil((avg*1.1)/5)*5;
+    if(vorschlag>0){
+      state.data.budgets.kategorien.push({ kategorie: kat, betrag: vorschlag });
+      added++;
+    }
+  });
+  if(added===0){ toast(t('noSuggestions')); return; }
+  persist();
+  toast(`${t('suggestionsAdded')} (${added})`);
+  render();
+}
+
 /* ---------------------------- DASHBOARD ------------------------------------ */
 function buildNotifications(){
   const buf = gefilterteBuchungen();
@@ -939,6 +1143,18 @@ function buildNotifications(){
   const mel = [];
   if(ein>0 && aus>ein) mel.push({icon:'🚨', text:(state.lang==='en'?'Expenses exceed income by ':'Ausgaben übersteigen Einnahmen um ')+fmt(aus-ein), level:'RED'});
   else if(ein>0 && aus>ein*0.9) mel.push({icon:'⚠', text:(state.lang==='en'?'Expenses close to income: ':'Ausgaben nahe an Einnahmen: ')+fmt(aus)+' / '+fmt(ein), level:'AMBER'});
+  // Budget-Warnungen
+  const { spentByCat, gesamtAusgegeben } = budgetsFuerMonat();
+  const bd = state.data.budgets;
+  if(bd.gesamt!=null){
+    if(gesamtAusgegeben>bd.gesamt) mel.push({icon:'📅', text:t('overallBudget')+': '+t('budgetOverBy')+' '+fmt(gesamtAusgegeben-bd.gesamt), level:'RED'});
+    else if(gesamtAusgegeben>=bd.gesamt*0.8) mel.push({icon:'📅', text:t('overallBudget')+': '+fmt(bd.gesamt-gesamtAusgegeben)+' '+t('budgetLeft'), level:'AMBER'});
+  }
+  bd.kategorien.forEach(entry=>{
+    const spent = spentByCat[entry.kategorie]||0;
+    if(spent>entry.betrag) mel.push({icon:iconFor(entry.kategorie), text:catLabel(entry.kategorie)+': '+t('budgetOverBy')+' '+fmt(spent-entry.betrag), level:'RED'});
+    else if(spent>=entry.betrag*0.8) mel.push({icon:iconFor(entry.kategorie), text:catLabel(entry.kategorie)+': '+fmt(entry.betrag-spent)+' '+t('budgetLeft'), level:'AMBER'});
+  });
   state.data.wiederkehrend.forEach(w=>{
     const due = new Date(w.naechstesFaellig);
     const days = Math.round((due-heute)/86400000);
@@ -1596,7 +1812,7 @@ function renderSettings(c){
     const fresh = emptyUserData();
     await sb.from('user_data').update({
       buchungen: [], sparziele: [], wiederkehrend: [], konten: fresh.konten,
-      kategorien: fresh.kategorien, settings: {theme:'dark', lang:'de'},
+      kategorien: fresh.kategorien, budgets: fresh.budgets, settings: {theme:'dark', lang:'de'},
       updated_at: new Date().toISOString()
     }).eq('id', state.authId);
     doLogout();

@@ -21,6 +21,31 @@ const KONTO_TYP_ICON = { bank:"🏦", bargeld:"💵", kreditkarte:"💳", sonsti
 const KONTO_TYPEN = ["bank","bargeld","kreditkarte","sonstiges"];
 const FREE_KONTEN_LIMIT = 2; // Free-Plan: max. 2 Konten, Pro: unbegrenzt
 
+// Stichwort → Kategorie für die automatische Kategorisierung beim Erfassen
+// einer Buchung. Bewusst simpel (Substring-Suche in der Beschreibung),
+// deckt aber die häufigsten deutschen Händler/Anbieter ab.
+const AUTO_KAT_KEYWORDS = [
+  ['miete', 'Wohnen'], ['nebenkosten', 'Wohnen'], ['strom', 'Wohnen'], ['gas ', 'Wohnen'], ['hausrat', 'Wohnen'],
+  ['rewe', 'Lebensmittel'], ['edeka', 'Lebensmittel'], ['aldi', 'Lebensmittel'], ['lidl', 'Lebensmittel'],
+  ['kaufland', 'Lebensmittel'], ['netto', 'Lebensmittel'], ['penny', 'Lebensmittel'], ['supermarkt', 'Lebensmittel'],
+  ['tankstelle', 'Transport'], ['tanken', 'Transport'], ['shell', 'Transport'], ['aral', 'Transport'], ['esso', 'Transport'],
+  ['db bahn', 'Transport'], ['deutsche bahn', 'Transport'], ['bvg', 'Transport'], ['uber', 'Transport'], ['bolt', 'Transport'],
+  ['apotheke', 'Gesundheit'], ['arzt', 'Gesundheit'], ['zahnarzt', 'Gesundheit'], ['krankenkasse', 'Gesundheit'],
+  ['netflix', 'Freizeit'], ['spotify', 'Freizeit'], ['disney', 'Freizeit'], ['kino', 'Freizeit'], ['steam', 'Freizeit'],
+  ['fitness', 'Freizeit'], ['gym', 'Freizeit'], ['restaurant', 'Freizeit'], ['amazon prime', 'Freizeit'],
+  ['zara', 'Kleidung'], ['h&m', 'Kleidung'], ['hm ', 'Kleidung'], ['zalando', 'Kleidung'], ['primark', 'Kleidung'],
+  ['gehalt', 'Gehalt'], ['lohn', 'Gehalt'], ['kindergeld', 'Kindergeld'], ['bürgergeld', 'Bürgergeld'], ['jobcenter', 'Bürgergeld'],
+];
+function guessKategorie(text, isIncome){
+  const lower = (text||'').toLowerCase();
+  const hit = AUTO_KAT_KEYWORDS.find(([kw]) => lower.includes(kw));
+  if(!hit) return null;
+  const [,kat] = hit;
+  // Nur vorschlagen, wenn die geratene Kategorie zur aktuellen Einnahme/Ausgabe-Seite passt
+  const gueltig = allCats(isIncome).some(k=>k.key===kat);
+  return gueltig ? kat : null;
+}
+
 const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const MONATE_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONATE_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -78,7 +103,11 @@ const L = {
     noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt.",
     subsPerMonth:"Abos & Wiederkehrend / Monat", subsPerYear:"Hochgerechnet / Jahr", interval:"Intervall",
     monthly:"Monatlich", yearly:"Jährlich", reminderDays:"Erinnerung (Tage vorher)", cancelBy:"Kündigungsfrist",
-    downloadReport:"Monatsbericht (PDF)", allTime:"Gesamter Zeitraum", thisMonthScope:"Aktueller Monat"
+    downloadReport:"Monatsbericht (PDF)", allTime:"Gesamter Zeitraum", thisMonthScope:"Aktueller Monat",
+    unusualExpenses:"Ungewöhnlich hohe Ausgaben", noAnomalies:"Keine auffälligen Ausgaben diesen Monat.",
+    savingsPlanTitle:"Wie kann ich sparen?", savingsPlanDesc:"Gib einen Zielbetrag ein — wir schlagen vor, wo du kürzen könntest.",
+    targetSavings:"Zielbetrag (€ / Monat)", calculatePlan:"Berechnen", savingsPlanResult:"Damit sparst du ca.",
+    savingsPlanShortfall:"Für die restlichen fehlt noch:", noSavingsPlanPossible:"Nicht genug Ausgaben-Historie für einen Vorschlag."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -129,7 +158,11 @@ const L = {
     noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget.",
     subsPerMonth:"Subscriptions & recurring / month", subsPerYear:"Projected / year", interval:"Interval",
     monthly:"Monthly", yearly:"Yearly", reminderDays:"Reminder (days before)", cancelBy:"Cancel by",
-    downloadReport:"Monthly report (PDF)", allTime:"All time", thisMonthScope:"Current month"
+    downloadReport:"Monthly report (PDF)", allTime:"All time", thisMonthScope:"Current month",
+    unusualExpenses:"Unusually high expenses", noAnomalies:"No unusual expenses this month.",
+    savingsPlanTitle:"How can I save?", savingsPlanDesc:"Enter a target amount — we'll suggest where you could cut back.",
+    targetSavings:"Target amount (€ / month)", calculatePlan:"Calculate", savingsPlanResult:"That saves you about",
+    savingsPlanShortfall:"Still missing for the rest:", noSavingsPlanPossible:"Not enough spending history for a suggestion."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -180,7 +213,11 @@ const L = {
     noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل.",
     subsPerMonth:"الاشتراكات والمدفوعات المتكررة / شهريًا", subsPerYear:"المتوقع / سنويًا", interval:"الفاصل الزمني",
     monthly:"شهري", yearly:"سنوي", reminderDays:"تذكير (أيام قبل الاستحقاق)", cancelBy:"مهلة الإلغاء",
-    downloadReport:"تقرير شهري (PDF)", allTime:"كل الفترة", thisMonthScope:"الشهر الحالي"
+    downloadReport:"تقرير شهري (PDF)", allTime:"كل الفترة", thisMonthScope:"الشهر الحالي",
+    unusualExpenses:"مصروفات مرتفعة بشكل غير معتاد", noAnomalies:"لا توجد مصروفات غير معتادة هذا الشهر.",
+    savingsPlanTitle:"كيف يمكنني الادخار؟", savingsPlanDesc:"أدخل مبلغًا مستهدفًا — سنقترح أين يمكنك التوفير.",
+    targetSavings:"المبلغ المستهدف (€ / شهريًا)", calculatePlan:"احسب", savingsPlanResult:"بهذا توفر حوالي",
+    savingsPlanShortfall:"ما زال ناقصًا للباقي:", noSavingsPlanPossible:"لا يوجد سجل إنفاق كافٍ لتقديم اقتراح."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -360,6 +397,7 @@ const state = {
   aktiverMonat: new Date().getMonth()+1,
   data: emptyUserData(),
   plan: 'free', // 'free' | 'pro' — kommt aus der subscriptions-Tabelle, nicht clientseitig änderbar
+  autoCategorize: true,
   txFilter: { search:'', kategorie:'', kontoId:'' },
   loginError: '',
   regError: ''
@@ -375,7 +413,7 @@ function applyTheme(){
 
 async function persist(){
   if(!state.authId) return;
-  state.data.settings = { theme: state.theme, lang: state.lang };
+  state.data.settings = { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize };
   const ok = await Store.saveUserData(state.authId, state.data);
   window.__syncOk = ok;
   injectStorageWarning();
@@ -693,6 +731,7 @@ async function enterApp(authUser, username){
   state.data = data;
   state.theme = data.settings.theme || 'dark';
   state.lang = data.settings.lang || 'de';
+  state.autoCategorize = data.settings.autoCategorize !== false; // Standard: an
   state.plan = await Store.getPlan(authUser.id);
   state.screen = 'app';
   state.tab = 'dashboard';
@@ -1374,6 +1413,7 @@ function renderTxTab(c, isIncome){
 function openTxModal(isIncome){
   const cats = allCats(isIncome);
   let selectedCat = cats[0].key;
+  let userPickedCat = false; // sobald der Nutzer manuell klickt, nicht mehr automatisch überschreiben
   let selectedKonto = state.data.konten[0]?.id;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
@@ -1399,8 +1439,18 @@ function openTxModal(isIncome){
     </div>`;
   document.body.appendChild(bg);
   bg.querySelectorAll('#tx-cats .chip').forEach(ch=>{
-    ch.onclick = ()=>{ selectedCat = ch.dataset.k; bg.querySelectorAll('#tx-cats .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
+    ch.onclick = ()=>{ userPickedCat = true; selectedCat = ch.dataset.k; bg.querySelectorAll('#tx-cats .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
   });
+  if(state.autoCategorize){
+    bg.querySelector('#tx-desc').addEventListener('input', e=>{
+      if(userPickedCat) return;
+      const guess = guessKategorie(e.target.value, isIncome);
+      if(guess && guess!==selectedCat){
+        selectedCat = guess;
+        bg.querySelectorAll('#tx-cats .chip').forEach(x=> x.classList.toggle('active', x.dataset.k===guess));
+      }
+    });
+  }
   bg.querySelector('#tx-konto').onchange = e=>{ selectedKonto = e.target.value; };
   bg.querySelector('#tx-cancel').onclick = ()=> bg.remove();
   bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
@@ -1760,6 +1810,59 @@ function generateAITips(buf, ein, aus, spar, bilanz){
   return tips;
 }
 
+// Erkennung ungewöhnlich hoher Ausgaben: vergleicht jede Buchung des aktuellen
+// Monats mit dem historischen Durchschnitt (letzte 6 Monate) ihrer Kategorie.
+// Braucht mind. 2 historische Buchungen in der Kategorie, um Zufallstreffer
+// bei brandneuen Kategorien zu vermeiden.
+function detectAnomalies(){
+  const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
+  const historyByCat = {};
+  for(let i=1;i<=6;i++){
+    let m = state.aktiverMonat-i, y = state.aktivesJahr;
+    while(m<1){ m+=12; y--; }
+    state.data.buchungen.filter(b=>{
+      const d = new Date(b.datum);
+      return !b.istEinnahme && !b.istUeberweisung && d.getFullYear()===y && (d.getMonth()+1)===m;
+    }).forEach(b=>{
+      if(!historyByCat[b.kategorie]) historyByCat[b.kategorie] = { sum:0, count:0 };
+      historyByCat[b.kategorie].sum += b.betrag;
+      historyByCat[b.kategorie].count++;
+    });
+  }
+  const anomalies = [];
+  buf.forEach(b=>{
+    const h = historyByCat[b.kategorie];
+    if(!h || h.count<2) return;
+    const avg = h.sum/h.count;
+    if(b.betrag > avg*2 && b.betrag > 20){
+      anomalies.push({ ...b, avg: round2(avg), faktor: b.betrag/avg });
+    }
+  });
+  return anomalies.sort((a,b)=>b.faktor-a.faktor).slice(0,5);
+}
+
+// "Wie kann ich X€ im Monat sparen?" — schlägt vor, die größten Ausgaben-
+// Kategorien anteilig zu kürzen (max. 40% pro Kategorie, damit es realistisch
+// bleibt), bis das Ziel erreicht ist oder alle Kategorien ausgeschöpft sind.
+function computeSavingsPlan(target){
+  const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
+  const katMap = {};
+  buf.forEach(b=> katMap[b.kategorie] = (katMap[b.kategorie]||0)+b.betrag);
+  const entries = Object.entries(katMap).sort((a,b)=>b[1]-a[1]);
+  let remaining = target;
+  const plan = [];
+  for(const [kat,val] of entries){
+    if(remaining<=0) break;
+    const maxCut = round2(val*0.4);
+    const cut = Math.min(maxCut, remaining);
+    if(cut>=1){
+      plan.push({ kategorie:kat, cut: round2(cut), basis: val });
+      remaining -= cut;
+    }
+  }
+  return { plan, erreicht: round2(target-Math.max(0,remaining)), rest: round2(Math.max(0,remaining)) };
+}
+
 function renderAI(c){
   const buf = gefilterteBuchungen();
   const ein = summeEin(buf), aus = summeAus(buf);
@@ -1773,6 +1876,7 @@ function renderAI(c){
   const katCounts = {};
   buf.forEach(b=> katCounts[b.kategorie]=(katCounts[b.kategorie]||0)+1);
   const catRows = Object.entries(katCounts).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const anomalies = detectAnomalies();
 
   c.innerHTML = `
     <div class="card" style="margin-bottom:16px;">
@@ -1792,6 +1896,32 @@ function renderAI(c){
           <div class="tx">${escapeHtml(text)}</div>
         </div>`;}).join('')}
     </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3>⚠️ ${t('unusualExpenses')}</h3>
+      ${anomalies.length ? anomalies.map(a=>`
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-weight:600; font-size:13px;">${iconFor(a.kategorie)} ${escapeHtml(a.beschreibung)}</div>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">${catLabel(a.kategorie)} · ${en?'usually about':'normalerweise ca.'} ${fmt(a.avg)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700; color:var(--red); font-family:var(--font-num);">${fmt(a.betrag)}</div>
+            <div style="font-size:11px; color:var(--red);">${a.faktor.toFixed(1)}× ${en?'higher':'höher'}</div>
+          </div>
+        </div>`).join('') : `<div class="desc" style="padding:6px 0;">${t('noAnomalies')}</div>`}
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3>💡 ${t('savingsPlanTitle')}</h3>
+      <div class="desc" style="margin-bottom:12px;">${t('savingsPlanDesc')}</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <input id="sp-target" type="number" min="1" step="1" placeholder="${t('targetSavings')}" style="flex:1; min-width:140px; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:10px 12px; font-size:13px;"/>
+        <button class="btn btn-primary btn-sm" id="sp-calc">${t('calculatePlan')}</button>
+      </div>
+      <div id="sp-result" style="margin-top:14px;"></div>
+    </div>
+
     <div class="card" style="margin-bottom:16px;">
       <h3>${en?'Category overview':'Kategorie-Übersicht'}</h3>
       ${catRows.length ? catRows.map(([k,v])=>`
@@ -1801,6 +1931,29 @@ function renderAI(c){
         </div>`).join('') : `<div class="empty-state">${t('noData')}</div>`}
     </div>
   `;
+
+  const spInput = document.getElementById('sp-target');
+  const spResult = document.getElementById('sp-result');
+  function runSavingsPlan(){
+    const target = parseFloat(spInput.value.replace(',','.'));
+    if(!target || target<=0){ spResult.innerHTML = `<div class="desc">${t('fillAllFields')}</div>`; return; }
+    const { plan, erreicht, rest } = computeSavingsPlan(target);
+    if(!plan.length){ spResult.innerHTML = `<div class="desc">${t('noSavingsPlanPossible')}</div>`; return; }
+    spResult.innerHTML = `
+      ${plan.map(p=>`
+        <div style="display:flex; justify-content:space-between; padding:7px 0; font-size:13px; border-bottom:1px solid var(--border);">
+          <span>${iconFor(p.kategorie)} ${catLabel(p.kategorie)}</span>
+          <span style="font-weight:600; color:var(--green);">−${fmt(p.cut)}</span>
+        </div>`).join('')}
+      <div style="display:flex; justify-content:space-between; padding-top:10px; font-weight:700; font-size:13.5px;">
+        <span>${t('savingsPlanResult')}</span>
+        <span style="color:var(--green);">${fmt(erreicht)}</span>
+      </div>
+      ${rest>0 ? `<div class="desc" style="margin-top:6px; color:var(--amber);">${t('savingsPlanShortfall')} ${fmt(rest)}</div>` : ''}
+    `;
+  }
+  document.getElementById('sp-calc').onclick = runSavingsPlan;
+  spInput.addEventListener('keydown', e=>{ if(e.key==='Enter') runSavingsPlan(); });
 }
 
 /* ---------------------------- SETTINGS -------------------------------------- */
@@ -1830,6 +1983,13 @@ function renderSettings(c){
           <button data-v="de" class="${state.lang==='de'?'active':''}">DE</button>
           <button data-v="en" class="${state.lang==='en'?'active':''}">EN</button>
           <button data-v="ar" class="${state.lang==='ar'?'active':''}">AR</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">${t('autoCategorize')}</div><div class="desc">${state.lang==='en'?'Suggest a category automatically based on the description (e.g. "Rewe" → Groceries)':state.lang==='ar'?'اقتراح فئة تلقائيًا بناءً على الوصف':'Schlägt beim Erfassen automatisch eine Kategorie anhand der Beschreibung vor (z.B. "Rewe" → Lebensmittel)'}</div></div>
+        <div class="seg" id="autocat-seg" style="width:110px;">
+          <button data-v="on" class="${state.autoCategorize?'active':''}">${state.lang==='en'?'On':'An'}</button>
+          <button data-v="off" class="${!state.autoCategorize?'active':''}">${state.lang==='en'?'Off':'Aus'}</button>
         </div>
       </div>
       <div class="settings-row">
@@ -1869,6 +2029,9 @@ function renderSettings(c){
   });
   document.querySelectorAll('#lang-seg button').forEach(b=>{
     b.onclick = ()=>{ state.lang = b.dataset.v; persist(); render(); };
+  });
+  document.querySelectorAll('#autocat-seg button').forEach(b=>{
+    b.onclick = ()=>{ state.autoCategorize = b.dataset.v==='on'; persist(); render(); };
   });
   document.getElementById('btn-export').onclick = ()=> exportCsv(document.getElementById('export-scope').value);
   document.getElementById('btn-report').onclick = generateMonthlyReportPdf;

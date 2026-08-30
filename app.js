@@ -75,7 +75,9 @@ const L = {
     setOverallBudget:"Festlegen", noOverallBudget:"Noch kein Gesamtbudget festgelegt.", categoryBudgets:"Budgets pro Kategorie",
     addBudget:"Budget hinzufügen", noBudgets:"Noch keine Budgets angelegt.", budgetLeft:"noch übrig",
     budgetOverBy:"überschritten um", suggestBudgets:"Vorschlag berechnen", suggestionsAdded:"Budgets vorgeschlagen",
-    noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt."
+    noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt.",
+    subsPerMonth:"Abos & Wiederkehrend / Monat", subsPerYear:"Hochgerechnet / Jahr", interval:"Intervall",
+    monthly:"Monatlich", yearly:"Jährlich", reminderDays:"Erinnerung (Tage vorher)", cancelBy:"Kündigungsfrist"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -123,7 +125,9 @@ const L = {
     setOverallBudget:"Set", noOverallBudget:"No overall budget set yet.", categoryBudgets:"Budgets per category",
     addBudget:"Add budget", noBudgets:"No budgets set up yet.", budgetLeft:"left",
     budgetOverBy:"over by", suggestBudgets:"Suggest budgets", suggestionsAdded:"Budgets suggested",
-    noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget."
+    noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget.",
+    subsPerMonth:"Subscriptions & recurring / month", subsPerYear:"Projected / year", interval:"Interval",
+    monthly:"Monthly", yearly:"Yearly", reminderDays:"Reminder (days before)", cancelBy:"Cancel by"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -171,7 +175,9 @@ const L = {
     setOverallBudget:"تحديد", noOverallBudget:"لم يتم تحديد ميزانية إجمالية بعد.", categoryBudgets:"ميزانيات حسب الفئة",
     addBudget:"إضافة ميزانية", noBudgets:"لا توجد ميزانيات بعد.", budgetLeft:"متبقٍ",
     budgetOverBy:"تجاوزت بمقدار", suggestBudgets:"اقتراح ميزانية", suggestionsAdded:"تم اقتراح ميزانيات",
-    noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل."
+    noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل.",
+    subsPerMonth:"الاشتراكات والمدفوعات المتكررة / شهريًا", subsPerYear:"المتوقع / سنويًا", interval:"الفاصل الزمني",
+    monthly:"شهري", yearly:"سنوي", reminderDays:"تذكير (أيام قبل الاستحقاق)", cancelBy:"مهلة الإلغاء"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -316,7 +322,12 @@ function migrateData(data){
   }
   const defaultKontoId = data.konten[0].id;
   data.buchungen.forEach(b=>{ if(!b.kontoId){ b.kontoId = defaultKontoId; changed = true; } });
-  data.wiederkehrend.forEach(w=>{ if(!w.kontoId){ w.kontoId = defaultKontoId; changed = true; } });
+  data.wiederkehrend.forEach(w=>{
+    if(!w.kontoId){ w.kontoId = defaultKontoId; changed = true; }
+    if(!w.intervall){ w.intervall = 'monatlich'; changed = true; }
+    if(w.erinnerungTage==null){ w.erinnerungTage = 5; changed = true; }
+    if(w.kuendigungsdatum===undefined){ w.kuendigungsdatum = null; changed = true; }
+  });
   if(!data.kategorien) data.kategorien = { ausgaben:[], einnahmen:[] };
   if(!data.kategorien.ausgaben) data.kategorien.ausgaben = [];
   if(!data.kategorien.einnahmen) data.kategorien.einnahmen = [];
@@ -1158,8 +1169,13 @@ function buildNotifications(){
   state.data.wiederkehrend.forEach(w=>{
     const due = new Date(w.naechstesFaellig);
     const days = Math.round((due-heute)/86400000);
+    const remindDays = w.erinnerungTage ?? 5;
     if(days<0) mel.push({icon:'❗', text:`"${w.name}" ${state.lang==='en'?'is overdue':'ist überfällig'}`, level:'RED'});
-    else if(days<=5) mel.push({icon:'📅', text:`"${w.name}" ${state.lang==='en'?'due in':'fällig in'} ${days} ${state.lang==='en'?'days':'Tagen'} – ${fmt(w.betrag)}`, level:'AMBER'});
+    else if(days<=remindDays) mel.push({icon:'📅', text:`"${w.name}" ${state.lang==='en'?'due in':'fällig in'} ${days} ${state.lang==='en'?'days':'Tagen'} – ${fmt(w.betrag)}`, level:'AMBER'});
+    if(w.kuendigungsdatum){
+      const kDays = Math.round((new Date(w.kuendigungsdatum)-heute)/86400000);
+      if(kDays>=0 && kDays<=14) mel.push({icon:'✂️', text:`${t('cancelBy')} "${w.name}": ${kDays} ${state.lang==='en'?'days left':'Tage übrig'}`, level: kDays<=3?'RED':'AMBER'});
+    }
   });
   state.data.sparziele.forEach(s=>{
     const pct = s.ziel>0 ? (s.gespart/s.ziel*100) : 0;
@@ -1496,30 +1512,52 @@ function openDepositModal(goalId){
 /* ---------------------------- RECURRING PAYMENTS ---------------------------- */
 function renderRecurring(c){
   const list = [...state.data.wiederkehrend].sort((a,b)=>a.naechstesFaellig.localeCompare(b.naechstesFaellig));
+  const heute = new Date();
+
+  // "Du zahlst X€/Monat für Abos" — Ausgaben-Abos auf Monatsbasis normalisiert
+  const ausgabenAbos = state.data.wiederkehrend.filter(w=>!w.istEinnahme);
+  const proMonat = ausgabenAbos.reduce((s,w)=> s + (w.intervall==='jaehrlich' ? w.betrag/12 : w.betrag), 0);
+  const proJahr = ausgabenAbos.reduce((s,w)=> s + (w.intervall==='jaehrlich' ? w.betrag : w.betrag*12), 0);
+
   c.innerHTML = `
+    <div class="grid grid-2" style="margin-bottom:18px;">
+      ${kpiCard(t('subsPerMonth'), fmt(proMonat), 'neg', '💳')}
+      ${kpiCard(t('subsPerYear'), fmt(proJahr), 'neg', '📆')}
+    </div>
     <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
       <button class="btn btn-primary" id="btn-add-rec">${t('newRecurring')}</button>
     </div>
     <div class="card">
       ${list.length ? list.map(w=>{
-        const days = Math.round((new Date(w.naechstesFaellig)-new Date())/86400000);
+        const days = Math.round((new Date(w.naechstesFaellig)-heute)/86400000);
         let badge='';
         if(days<0) badge = `<span class="due-badge" style="background:var(--red-dim); color:var(--red);">${t('overdue')}</span>`;
-        else if(days<=5) badge = `<span class="due-badge" style="background:var(--amber-dim); color:var(--amber);">${t('dueSoon')}</span>`;
+        else if(days<=(w.erinnerungTage??5)) badge = `<span class="due-badge" style="background:var(--amber-dim); color:var(--amber);">${t('dueSoon')}</span>`;
+        const intervallBadge = `<span class="due-badge" style="background:var(--surface2); color:var(--muted);">${w.intervall==='jaehrlich'?t('yearly'):t('monthly')}</span>`;
+        let kuendigungInfo = '';
+        if(w.kuendigungsdatum){
+          const kDays = Math.round((new Date(w.kuendigungsdatum)-heute)/86400000);
+          const kColor = kDays<0 ? 'var(--muted)' : kDays<=14 ? 'var(--red)' : 'var(--muted)';
+          kuendigungInfo = ` · <span style="color:${kColor};">${t('cancelBy')}: ${w.kuendigungsdatum}</span>`;
+        }
         return `<div class="recur-row">
           <div class="tx-icon">${iconFor(w.kategorie)}</div>
           <div class="tx-info">
-            <div class="name">${escapeHtml(w.name)} ${badge}</div>
-            <div class="meta">${catLabel(w.kategorie)} · ${t('nextDue')}: ${w.naechstesFaellig}</div>
+            <div class="name">${escapeHtml(w.name)} ${badge} ${intervallBadge}</div>
+            <div class="meta">${catLabel(w.kategorie)} · ${t('nextDue')}: ${w.naechstesFaellig}${kuendigungInfo}</div>
           </div>
           <div class="tx-amt ${w.istEinnahme?'pos':'neg'}">${w.istEinnahme?'+':'-'}${fmt(w.betrag)}</div>
+          <button class="icon-btn" data-edit="${w.id}" title="${t('edit')}">✎</button>
           <button class="btn btn-ghost btn-sm" data-book="${w.id}">${t('bookNow')}</button>
           <button class="tx-del" style="opacity:1" data-id="${w.id}" title="${t('delete')}">${ICO.trash}</button>
         </div>`;
       }).join('') : `<div class="empty-state"><div class="big">🔁</div>${t('noRecurring')}</div>`}
     </div>
   `;
-  document.getElementById('btn-add-rec').onclick = openRecurringModal;
+  document.getElementById('btn-add-rec').onclick = ()=>openRecurringModal();
+  c.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = ()=> openRecurringModal(state.data.wiederkehrend.find(w=>w.id===btn.dataset.edit));
+  });
   c.querySelectorAll('[data-id]').forEach(btn=>{
     btn.onclick = ()=>{ state.data.wiederkehrend = state.data.wiederkehrend.filter(w=>w.id!==btn.dataset.id); persist(); render(); };
   });
@@ -1529,39 +1567,46 @@ function renderRecurring(c){
       if(!w) return;
       state.data.buchungen.push({ id:uid(), beschreibung:w.name, betrag:w.betrag, kategorie:w.kategorie, datum:todayISO(), notiz:'', istEinnahme:w.istEinnahme, kontoId: w.kontoId || state.data.konten[0]?.id });
       const d = new Date(w.naechstesFaellig);
-      d.setMonth(d.getMonth()+1);
+      if(w.intervall==='jaehrlich') d.setFullYear(d.getFullYear()+1); else d.setMonth(d.getMonth()+1);
       w.naechstesFaellig = d.toISOString().slice(0,10);
       persist(); toast(state.lang==='en'?'Booked!':'Gebucht!'); render();
     };
   });
 }
 
-function openRecurringModal(){
-  let selectedCat = KAT_AUSGABEN[0].key;
-  let isIncome = false;
-  let selectedKonto = state.data.konten[0]?.id;
+function openRecurringModal(existing){
+  let selectedCat = existing ? existing.kategorie : KAT_AUSGABEN[0].key;
+  let isIncome = existing ? existing.istEinnahme : false;
+  let selectedKonto = existing ? existing.kontoId : state.data.konten[0]?.id;
+  let selectedIntervall = existing ? (existing.intervall||'monatlich') : 'monatlich';
   const bg = document.createElement('div');
   bg.className='modal-bg';
   bg.innerHTML = `
     <div class="modal">
-      <h3>${t('newRecurring')}</h3>
-      <div class="field"><label>${t('description')}</label><input id="r-name"/></div>
-      <div class="field"><label>${t('amount')}</label><input id="r-amt" type="number" step="0.01" min="0"/></div>
+      <h3>${existing? t('edit') : t('newRecurring')}</h3>
+      <div class="field"><label>${t('description')}</label><input id="r-name" value="${existing?escapeHtml(existing.name):''}"/></div>
+      <div class="field"><label>${t('amount')}</label><input id="r-amt" type="number" step="0.01" min="0" value="${existing?existing.betrag:''}"/></div>
       <div class="field"><label>${t('account')}</label>
-        <select id="r-konto">${state.data.konten.map(k=>`<option value="${k.id}">${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}</select>
+        <select id="r-konto">${state.data.konten.map(k=>`<option value="${k.id}" ${k.id===selectedKonto?'selected':''}>${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>${t('interval')}</label>
+        <div class="seg" id="r-intervall">
+          <button data-v="monatlich" class="${selectedIntervall==='monatlich'?'active':''}">${t('monthly')}</button>
+          <button data-v="jaehrlich" class="${selectedIntervall==='jaehrlich'?'active':''}">${t('yearly')}</button>
+        </div>
       </div>
       <div class="field"><label>${t('income')} / ${t('expenses')}</label>
         <div class="seg" id="r-seg">
-          <button class="active" data-v="0">${t('expenses')}</button>
-          <button data-v="1">${t('income')}</button>
+          <button class="${!isIncome?'active':''}" data-v="0">${t('expenses')}</button>
+          <button class="${isIncome?'active':''}" data-v="1">${t('income')}</button>
         </div>
       </div>
       <div class="field"><label>${t('category')}</label>
-        <div class="chip-row" id="r-cats">
-          ${allCats(false).map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.eltern?'↳ ':''}${k.icon} ${catLabel(k.key)}</div>`).join('')}
-        </div>
+        <div class="chip-row" id="r-cats"></div>
       </div>
-      <div class="field"><label>${t('nextDue')}</label><input id="r-date" type="date" value="${todayISO()}"/></div>
+      <div class="field"><label>${t('nextDue')}</label><input id="r-date" type="date" value="${existing?existing.naechstesFaellig:todayISO()}"/></div>
+      <div class="field"><label>${t('reminderDays')}</label><input id="r-remind" type="number" min="0" step="1" value="${existing?(existing.erinnerungTage??5):5}"/></div>
+      <div class="field"><label>${t('cancelBy')} (${state.lang==='en'?'optional':'optional'})</label><input id="r-cancel-date" type="date" value="${existing&&existing.kuendigungsdatum?existing.kuendigungsdatum:''}"/></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="r-cancel">${t('cancel')}</button>
         <button class="btn btn-primary" id="r-save">${t('save')}</button>
@@ -1571,7 +1616,7 @@ function openRecurringModal(){
   const catsEl = bg.querySelector('#r-cats');
   function refreshCats(){
     const cats = allCats(isIncome);
-    selectedCat = cats[0].key;
+    if(!cats.some(k=>k.key===selectedCat)) selectedCat = cats[0].key;
     catsEl.innerHTML = cats.map(k=>`<div class="chip ${k.key===selectedCat?'active':''}" data-k="${k.key}">${k.eltern?'↳ ':''}${k.icon} ${catLabel(k.key)}</div>`).join('');
     catsEl.querySelectorAll('.chip').forEach(ch=>{
       ch.onclick = ()=>{ selectedCat = ch.dataset.k; catsEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active', x===ch)); };
@@ -1579,6 +1624,9 @@ function openRecurringModal(){
   }
   refreshCats();
   bg.querySelector('#r-konto').onchange = e=>{ selectedKonto = e.target.value; };
+  bg.querySelectorAll('#r-intervall button').forEach(b=>{
+    b.onclick = ()=>{ selectedIntervall = b.dataset.v; bg.querySelectorAll('#r-intervall button').forEach(x=>x.classList.toggle('active', x===b)); };
+  });
   bg.querySelectorAll('#r-seg button').forEach(b=>{
     b.onclick = ()=>{ isIncome = b.dataset.v==='1'; bg.querySelectorAll('#r-seg button').forEach(x=>x.classList.toggle('active', x===b)); refreshCats(); };
   });
@@ -1588,8 +1636,14 @@ function openRecurringModal(){
     const name = bg.querySelector('#r-name').value.trim();
     const amt = parseFloat(bg.querySelector('#r-amt').value.replace(',','.'));
     const date = bg.querySelector('#r-date').value || todayISO();
+    const remind = parseInt(bg.querySelector('#r-remind').value,10);
+    const cancelDate = bg.querySelector('#r-cancel-date').value || null;
     if(!name || !amt || amt<=0){ toast(state.lang==='en'?'Please fill description and amount.':'Bitte Beschreibung und Betrag ausfüllen.'); return; }
-    state.data.wiederkehrend.push({ id:uid(), name, betrag:round2(amt), kategorie:selectedCat, naechstesFaellig:date, istEinnahme:isIncome, kontoId:selectedKonto });
+    if(existing){
+      Object.assign(existing, { name, betrag:round2(amt), kategorie:selectedCat, naechstesFaellig:date, istEinnahme:isIncome, kontoId:selectedKonto, intervall:selectedIntervall, erinnerungTage: isNaN(remind)?5:remind, kuendigungsdatum: cancelDate });
+    } else {
+      state.data.wiederkehrend.push({ id:uid(), name, betrag:round2(amt), kategorie:selectedCat, naechstesFaellig:date, istEinnahme:isIncome, kontoId:selectedKonto, intervall:selectedIntervall, erinnerungTage: isNaN(remind)?5:remind, kuendigungsdatum: cancelDate });
+    }
     persist(); bg.remove(); render();
   };
   bg.querySelector('#r-name').focus();

@@ -37,11 +37,31 @@ const AUTO_KAT_KEYWORDS = [
   ['gehalt', 'Gehalt'], ['lohn', 'Gehalt'], ['kindergeld', 'Kindergeld'], ['bürgergeld', 'Bürgergeld'], ['jobcenter', 'Bürgergeld'],
 ];
 function guessKategorie(text, isIncome){
-  const lower = (text||'').toLowerCase();
+  const lower = (text||'').trim().toLowerCase();
+  if(lower.length<3) return null;
+
+  // 1) Aus der eigenen Buchungshistorie lernen: gab es schon mal eine sehr
+  // ähnliche Beschreibung? Dann deren Kategorie vorschlagen (aktuellste
+  // zuerst) — das ist "smarter" als feste Stichwörter, weil es sich an
+  // Händler/Bezeichnungen anpasst, die NUR bei dir vorkommen.
+  const words = lower.split(/\s+/).filter(w=>w.length>=3);
+  if(words.length){
+    const kandidaten = state.data.buchungen
+      .filter(b=> b.istEinnahme===isIncome && !b.istUeberweisung)
+      .slice().sort((a,b)=> b.datum.localeCompare(a.datum));
+    for(const b of kandidaten){
+      const bl = b.beschreibung.toLowerCase();
+      // Treffer: mind. ein signifikantes Wort (≥3 Zeichen) kommt in beiden Texten vor
+      if(words.some(w=> bl.includes(w)) || words.some(w=> lower.includes(w) && bl.split(/\s+/).some(bw=>bw.length>=3 && w.includes(bw)))){
+        if(allCats(isIncome).some(k=>k.key===b.kategorie)) return b.kategorie;
+      }
+    }
+  }
+
+  // 2) Fallback: feste Stichwortliste (deckt Erstnutzung ohne Historie ab)
   const hit = AUTO_KAT_KEYWORDS.find(([kw]) => lower.includes(kw));
   if(!hit) return null;
   const [,kat] = hit;
-  // Nur vorschlagen, wenn die geratene Kategorie zur aktuellen Einnahme/Ausgabe-Seite passt
   const gueltig = allCats(isIncome).some(k=>k.key===kat);
   return gueltig ? kat : null;
 }
@@ -107,7 +127,10 @@ const L = {
     unusualExpenses:"Ungewöhnlich hohe Ausgaben", noAnomalies:"Keine auffälligen Ausgaben diesen Monat.",
     savingsPlanTitle:"Wie kann ich sparen?", savingsPlanDesc:"Gib einen Zielbetrag ein — wir schlagen vor, wo du kürzen könntest.",
     targetSavings:"Zielbetrag (€ / Monat)", calculatePlan:"Berechnen", savingsPlanResult:"Damit sparst du ca.",
-    savingsPlanShortfall:"Für die restlichen fehlt noch:", noSavingsPlanPossible:"Nicht genug Ausgaben-Historie für einen Vorschlag."
+    savingsPlanShortfall:"Für die restlichen fehlt noch:", noSavingsPlanPossible:"Nicht genug Ausgaben-Historie für einen Vorschlag.",
+    deepAiTitle:"Tiefere KI-Analyse", deepAiDesc:"Lässt Claude deine Zahlen wirklich durchdenken statt fester Regeln zu folgen.",
+    generateAnalysis:"Analyse erstellen", proOnly:"Nur mit Pro", proOnlyDesc:"Diese Funktion ist Teil des Pro-Plans (jede Analyse kostet echte API-Nutzung).",
+    generatingAnalysis:"Claude denkt nach…", deepAiError:"Die Analyse konnte gerade nicht erstellt werden. Bitte später erneut versuchen."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -162,7 +185,10 @@ const L = {
     unusualExpenses:"Unusually high expenses", noAnomalies:"No unusual expenses this month.",
     savingsPlanTitle:"How can I save?", savingsPlanDesc:"Enter a target amount — we'll suggest where you could cut back.",
     targetSavings:"Target amount (€ / month)", calculatePlan:"Calculate", savingsPlanResult:"That saves you about",
-    savingsPlanShortfall:"Still missing for the rest:", noSavingsPlanPossible:"Not enough spending history for a suggestion."
+    savingsPlanShortfall:"Still missing for the rest:", noSavingsPlanPossible:"Not enough spending history for a suggestion.",
+    deepAiTitle:"Deeper AI analysis", deepAiDesc:"Lets Claude actually reason about your numbers instead of following fixed rules.",
+    generateAnalysis:"Generate analysis", proOnly:"Pro only", proOnlyDesc:"This feature is part of the Pro plan (each analysis uses real API usage).",
+    generatingAnalysis:"Claude is thinking…", deepAiError:"The analysis couldn't be generated right now. Please try again later."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -217,7 +243,10 @@ const L = {
     unusualExpenses:"مصروفات مرتفعة بشكل غير معتاد", noAnomalies:"لا توجد مصروفات غير معتادة هذا الشهر.",
     savingsPlanTitle:"كيف يمكنني الادخار؟", savingsPlanDesc:"أدخل مبلغًا مستهدفًا — سنقترح أين يمكنك التوفير.",
     targetSavings:"المبلغ المستهدف (€ / شهريًا)", calculatePlan:"احسب", savingsPlanResult:"بهذا توفر حوالي",
-    savingsPlanShortfall:"ما زال ناقصًا للباقي:", noSavingsPlanPossible:"لا يوجد سجل إنفاق كافٍ لتقديم اقتراح."
+    savingsPlanShortfall:"ما زال ناقصًا للباقي:", noSavingsPlanPossible:"لا يوجد سجل إنفاق كافٍ لتقديم اقتراح.",
+    deepAiTitle:"تحليل ذكي أعمق", deepAiDesc:"يجعل Claude يفكر فعليًا في أرقامك بدلاً من اتباع قواعد ثابتة.",
+    generateAnalysis:"إنشاء تحليل", proOnly:"لأعضاء Pro فقط", proOnlyDesc:"هذه الميزة جزء من خطة Pro (كل تحليل يستهلك استخدامًا فعليًا لواجهة برمجة التطبيقات).",
+    generatingAnalysis:"Claude يفكر…", deepAiError:"تعذّر إنشاء التحليل الآن. يرجى المحاولة لاحقًا."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -1898,6 +1927,17 @@ function renderAI(c){
     </div>
 
     <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0;">🧠 ${t('deepAiTitle')}</h3>
+          <div class="desc" style="margin-top:4px;">${t('deepAiDesc')}</div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-deep-ai" style="white-space:nowrap;">${isPro() ? t('generateAnalysis') : '⭐ '+t('proOnly')}</button>
+      </div>
+      <div id="deep-ai-result" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
       <h3>⚠️ ${t('unusualExpenses')}</h3>
       ${anomalies.length ? anomalies.map(a=>`
         <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border);">
@@ -1954,6 +1994,59 @@ function renderAI(c){
   }
   document.getElementById('sp-calc').onclick = runSavingsPlan;
   spInput.addEventListener('keydown', e=>{ if(e.key==='Enter') runSavingsPlan(); });
+
+  document.getElementById('btn-deep-ai').onclick = ()=> runDeepAiAnalysis(anomalies);
+}
+
+async function runDeepAiAnalysis(anomalies){
+  if(!isPro()){ toast(t('upgradeComingSoon')); return; }
+  const resultEl = document.getElementById('deep-ai-result');
+  const btn = document.getElementById('btn-deep-ai');
+  const buf = gefilterteBuchungen().filter(b=>!b.istUeberweisung);
+  const ein = summeEin(buf), aus = summeAus(buf);
+  const katMap = {};
+  buf.filter(b=>!b.istEinnahme).forEach(b=> katMap[b.kategorie]=(katMap[b.kategorie]||0)+b.betrag);
+
+  const summary = {
+    lang: state.lang,
+    monat: monateFor(state.lang)[state.aktiverMonat-1]+' '+state.aktivesJahr,
+    einnahmen: round2(ein), ausgaben: round2(aus), bilanz: round2(ein-aus),
+    sparquote: ein>0 ? round2((ein-aus)/ein*100) : null,
+    kategorien: Object.entries(katMap).map(([k,v])=>({ kategorie:catLabel(k), betrag: round2(v) })),
+    budgets: {
+      gesamt: state.data.budgets.gesamt,
+      kategorien: state.data.budgets.kategorien.map(b=>({ kategorie: catLabel(b.kategorie), limit: b.betrag, ausgegeben: round2(katMap[b.kategorie]||0) }))
+    },
+    konten: state.data.konten.map(k=>({ name:k.name, saldo: kontoSaldo(k.id) })),
+    abos: state.data.wiederkehrend.filter(w=>!w.istEinnahme).map(w=>({ name:w.name, betrag:w.betrag, intervall:w.intervall })),
+    auffaellige_buchungen: anomalies.map(a=>({ beschreibung:a.beschreibung, kategorie: catLabel(a.kategorie), betrag:a.betrag, ueblich_ca: a.avg }))
+  };
+
+  btn.disabled = true;
+  resultEl.innerHTML = `<div class="desc">${t('generatingAnalysis')}</div>`;
+  try{
+    const { data, error } = await sb.functions.invoke('ai-analysis', { body: summary });
+    if(error || !data){
+      resultEl.innerHTML = `<div class="desc" style="color:var(--red);">${t('deepAiError')}</div>`;
+      console.error('ai-analysis Fehler:', error);
+      return;
+    }
+    if(data.error === 'pro_required'){
+      resultEl.innerHTML = `<div class="desc" style="color:var(--amber);">${t('proOnlyDesc')}</div>`;
+      return;
+    }
+    if(data.error){
+      resultEl.innerHTML = `<div class="desc" style="color:var(--red);">${t('deepAiError')}</div>`;
+      console.error('ai-analysis Fehler:', data.error, data.detail);
+      return;
+    }
+    resultEl.innerHTML = `<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.65;">${escapeHtml(data.analysis||'')}</div>`;
+  }catch(e){
+    console.error('ai-analysis Fehler:', e);
+    resultEl.innerHTML = `<div class="desc" style="color:var(--red);">${isNetworkError(e) ? t('brokenConn') : t('deepAiError')}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 /* ---------------------------- SETTINGS -------------------------------------- */

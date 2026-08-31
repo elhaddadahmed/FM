@@ -1,4 +1,4 @@
- =========================================================================
+/* =========================================================================
    FINANZMANAGER — Web Edition
    Persistente Speicherung über window.storage (Artifacts Storage API)
    ========================================================================= */
@@ -351,27 +351,9 @@ function emptyUserData(){
   };
 }
 
-// Wandelt "TT.MM.JJ" oder "TT.MM.JJJJ" ins ISO-Format "JJJJ-MM-TT" um.
-// Gibt bereits-ISO-Daten unverändert zurück, sonst null bei ungültigem Format.
-// Wird beim CSV-Import und bei der Datenmigration gebraucht, weil
-// new Date("01.07.26") in JS ein ungültiges Datum liefert und damit
-// jeder Monatsfilter (gefilterteBuchungen) diese Buchung nie findet.
-function parseFlexibleDate(str){
-  const s = String(str==null?'':str).trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // schon ISO
-  const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
-  if(!m) return null;
-  let [, tag, monat, jahr] = m;
-  if(jahr.length===2) jahr = (parseInt(jahr,10) < 70 ? '20' : '19') + jahr;
-  const iso = `${jahr}-${monat.padStart(2,'0')}-${tag.padStart(2,'0')}`;
-  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : null;
-}
-
 // Sorgt dafür, dass ältere Konten (vor Einführung von Mehrfach-Konten) nicht
 // kaputtgehen: legt bei Bedarf ein Standardkonto an und hängt alle
 // bestehenden Buchungen/wiederkehrenden Zahlungen ohne kontoId daran.
-// Repariert außerdem Buchungen, deren Datum (z.B. aus einem alten CSV-Import)
-// nicht im ISO-Format vorliegt — sonst tauchen sie in keinem Monat auf.
 function migrateData(data){
   let changed = false;
   if(!data.konten || data.konten.length===0){
@@ -379,22 +361,12 @@ function migrateData(data){
     changed = true;
   }
   const defaultKontoId = data.konten[0].id;
-  data.buchungen.forEach(b=>{
-    if(!b.kontoId){ b.kontoId = defaultKontoId; changed = true; }
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(b.datum))){
-      const fixed = parseFlexibleDate(b.datum);
-      if(fixed){ b.datum = fixed; changed = true; }
-    }
-  });
+  data.buchungen.forEach(b=>{ if(!b.kontoId){ b.kontoId = defaultKontoId; changed = true; } });
   data.wiederkehrend.forEach(w=>{
     if(!w.kontoId){ w.kontoId = defaultKontoId; changed = true; }
     if(!w.intervall){ w.intervall = 'monatlich'; changed = true; }
     if(w.erinnerungTage==null){ w.erinnerungTage = 5; changed = true; }
     if(w.kuendigungsdatum===undefined){ w.kuendigungsdatum = null; changed = true; }
-    if(w.naechstesFaellig && !/^\d{4}-\d{2}-\d{2}$/.test(String(w.naechstesFaellig))){
-      const fixed = parseFlexibleDate(w.naechstesFaellig);
-      if(fixed){ w.naechstesFaellig = fixed; changed = true; }
-    }
   });
   if(!data.kategorien) data.kategorien = { ausgaben:[], einnahmen:[] };
   if(!data.kategorien.ausgaben) data.kategorien.ausgaben = [];
@@ -766,8 +738,8 @@ async function enterApp(authUser, username){
   state.loginError=''; state.regError='';
   render();
   // Falls beim Laden alte Daten automatisch migriert wurden (z.B. Standard-
-  // konto neu angelegt oder Datumsformate repariert), das einmal direkt
-  // speichern statt zu warten, bis der Nutzer selbst etwas ändert.
+  // konto neu angelegt), das einmal direkt speichern statt zu warten, bis
+  // der Nutzer selbst etwas ändert.
   if(data.__migrated) persist();
 }
 
@@ -2333,13 +2305,7 @@ function importCsv(ev){
       for(let i=1;i<lines.length;i++){
         const cols = parseCsvLine(lines[i]);
         if(cols.length<6) continue;
-        const [datumRaw, beschreibung, betragRaw, kategorie, notiz, istEinnahmeRaw, kontoNameRaw] = cols;
-        // Datum robust umwandeln: sowohl "TT.MM.JJ(JJ)" (z.B. aus einem alten
-        // Export oder Tabellenkalkulation) als auch bereits-ISO werden
-        // akzeptiert. Ohne das landen Buchungen mit falschem Datumsformat
-        // zwar in der Datenbank, tauchen aber in KEINEM Monat mehr auf
-        // (new Date("01.07.26") ist ein Invalid Date in JS).
-        const datum = parseFlexibleDate(datumRaw);
+        const [datum, beschreibung, betragRaw, kategorie, notiz, istEinnahmeRaw, kontoNameRaw] = cols;
         const betrag = parseFloat(String(betragRaw).replace(',','.'));
         if(!datum || !beschreibung || isNaN(betrag)) continue;
         const istEinnahme = String(istEinnahmeRaw).trim().toLowerCase()==='true';

@@ -362,8 +362,12 @@ const Store = {
   async getPlan(userId){
     try{
       const { data, error } = await sb.from('subscriptions').select('plan').eq('id', userId).single();
-      if(error || !data) return 'free';
-      return data.plan || 'free';
+      if(!error && data) return data.plan || 'free';
+      // Kein Eintrag gefunden (z.B. Konto von vor Einführung des Pro/Free-
+      // Systems) — automatisch einen Free-Eintrag nachtragen, damit das
+      // nicht bei jedem alten Konto manuell im Dashboard gemacht werden muss.
+      await this.createFreeSubscription(userId);
+      return 'free';
     }catch(e){ console.error('getPlan Fehler:', e); return 'free'; }
   }
 };

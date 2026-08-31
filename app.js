@@ -130,7 +130,13 @@ const L = {
     savingsPlanShortfall:"Für die restlichen fehlt noch:", noSavingsPlanPossible:"Nicht genug Ausgaben-Historie für einen Vorschlag.",
     deepAiTitle:"Tiefere KI-Analyse", deepAiDesc:"Lässt Claude deine Zahlen wirklich durchdenken statt fester Regeln zu folgen.",
     generateAnalysis:"Analyse erstellen", proOnly:"Nur mit Pro", proOnlyDesc:"Diese Funktion ist Teil des Pro-Plans (jede Analyse kostet echte API-Nutzung).",
-    generatingAnalysis:"Claude denkt nach…", deepAiError:"Die Analyse konnte gerade nicht erstellt werden. Bitte später erneut versuchen."
+    generatingAnalysis:"Claude denkt nach…", deepAiError:"Die Analyse konnte gerade nicht erstellt werden. Bitte später erneut versuchen.",
+    savingsStreak:"Sparstreak", month:"Monat", months:"Monate", streakGoing:"Weiter so — jeden Monat im Plus bleiben, um den Streak zu halten!",
+    streakStart:"Starte deinen Streak, indem du diesen Monat im Plus abschließt.", monthlyGoal:"Monatsziel", setGoal:"Festlegen",
+    noMonthlyGoal:"Noch kein Monatsziel festgelegt.", achievements:"Erfolge",
+    badge_first_tx:"Erste Buchung", badge_fifty_tx:"50 Buchungen", badge_century_tx:"100 Buchungen",
+    badge_goal_reached:"Sparziel erreicht", badge_streak3:"3-Monats-Streak", badge_streak6:"6-Monats-Streak",
+    badge_multi_account:"3+ Konten", badge_budgeter:"Erstes Budget", badge_saver20:"20% Sparquote"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -188,7 +194,13 @@ const L = {
     savingsPlanShortfall:"Still missing for the rest:", noSavingsPlanPossible:"Not enough spending history for a suggestion.",
     deepAiTitle:"Deeper AI analysis", deepAiDesc:"Lets Claude actually reason about your numbers instead of following fixed rules.",
     generateAnalysis:"Generate analysis", proOnly:"Pro only", proOnlyDesc:"This feature is part of the Pro plan (each analysis uses real API usage).",
-    generatingAnalysis:"Claude is thinking…", deepAiError:"The analysis couldn't be generated right now. Please try again later."
+    generatingAnalysis:"Claude is thinking…", deepAiError:"The analysis couldn't be generated right now. Please try again later.",
+    savingsStreak:"Savings streak", month:"month", months:"months", streakGoing:"Keep it up — stay in the black each month to keep your streak alive!",
+    streakStart:"Start your streak by ending this month in the black.", monthlyGoal:"Monthly goal", setGoal:"Set",
+    noMonthlyGoal:"No monthly goal set yet.", achievements:"Achievements",
+    badge_first_tx:"First booking", badge_fifty_tx:"50 bookings", badge_century_tx:"100 bookings",
+    badge_goal_reached:"Goal reached", badge_streak3:"3-month streak", badge_streak6:"6-month streak",
+    badge_multi_account:"3+ accounts", badge_budgeter:"First budget", badge_saver20:"20% savings rate"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -246,7 +258,13 @@ const L = {
     savingsPlanShortfall:"ما زال ناقصًا للباقي:", noSavingsPlanPossible:"لا يوجد سجل إنفاق كافٍ لتقديم اقتراح.",
     deepAiTitle:"تحليل ذكي أعمق", deepAiDesc:"يجعل Claude يفكر فعليًا في أرقامك بدلاً من اتباع قواعد ثابتة.",
     generateAnalysis:"إنشاء تحليل", proOnly:"لأعضاء Pro فقط", proOnlyDesc:"هذه الميزة جزء من خطة Pro (كل تحليل يستهلك استخدامًا فعليًا لواجهة برمجة التطبيقات).",
-    generatingAnalysis:"Claude يفكر…", deepAiError:"تعذّر إنشاء التحليل الآن. يرجى المحاولة لاحقًا."
+    generatingAnalysis:"Claude يفكر…", deepAiError:"تعذّر إنشاء التحليل الآن. يرجى المحاولة لاحقًا.",
+    savingsStreak:"سلسلة الادخار", month:"شهر", months:"أشهر", streakGoing:"استمر — ابقَ في الأرباح كل شهر للحفاظ على سلسلتك!",
+    streakStart:"ابدأ سلسلتك بإنهاء هذا الشهر بأرباح.", monthlyGoal:"هدف الشهر", setGoal:"تحديد",
+    noMonthlyGoal:"لم يتم تحديد هدف شهري بعد.", achievements:"الإنجازات",
+    badge_first_tx:"أول عملية", badge_fifty_tx:"50 عملية", badge_century_tx:"100 عملية",
+    badge_goal_reached:"تحقيق هدف ادخار", badge_streak3:"سلسلة 3 أشهر", badge_streak6:"سلسلة 6 أشهر",
+    badge_multi_account:"3+ حسابات", badge_budgeter:"أول ميزانية", badge_saver20:"معدل ادخار 20%"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -326,6 +344,7 @@ const Store = {
         konten: data.konten || [],
         kategorien: data.kategorien || { ausgaben:[], einnahmen:[] },
         budgets: data.budgets || { gesamt:null, kategorien:[] },
+        monatsziel: data.monatsziel ?? null,
         settings: data.settings || { theme:'dark', lang:'de' }
       });
     }catch(e){ console.error('getUserData Fehler:', e); return null; }
@@ -335,7 +354,7 @@ const Store = {
       id: userId, display_name: displayName,
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, budgets: data.budgets, settings: data.settings
+      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, settings: data.settings
     });
     if(error) console.error('createUserData Fehler:', error);
     return !error;
@@ -344,7 +363,7 @@ const Store = {
     const { error } = await sb.from('user_data').update({
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, budgets: data.budgets, settings: data.settings,
+      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, settings: data.settings,
       updated_at: new Date().toISOString()
     }).eq('id', userId);
     if(error) console.error('saveUserData Fehler:', error);
@@ -380,6 +399,7 @@ function emptyUserData(){
     konten: [{ id: uid(), name: "Hauptkonto", typ: "bank", startsaldo: 0 }], // {id, name, typ, startsaldo}
     kategorien: { ausgaben: [], einnahmen: [] }, // eigene Kategorien: {key, icon, eltern}
     budgets: { gesamt: null, kategorien: [] }, // gesamt: Zahl|null; kategorien: [{kategorie, betrag}]
+    monatsziel: null, // Zahl|null — Sparziel pro Monat (wiederkehrend, nicht auf einen Monat fixiert)
     settings: { theme:"dark", lang:"de" }
   };
 }
@@ -406,6 +426,7 @@ function migrateData(data){
   if(!data.kategorien.einnahmen) data.kategorien.einnahmen = [];
   if(!data.budgets) data.budgets = { gesamt:null, kategorien:[] };
   if(!data.budgets.kategorien) data.budgets.kategorien = [];
+  if(data.monatsziel===undefined) data.monatsziel = null;
   data.__migrated = changed;
   return data;
 }
@@ -1283,9 +1304,11 @@ function renderDashboard(c){
   }
 
   const notifs = buildNotifications();
+  const streak = computeStreak();
 
   c.innerHTML = `
-    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
+      ${streak>0 ? `<div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--amber);">🔥 ${streak} ${streak===1?t('month'):t('months')} ${t('savingsStreak')}</div>` : `<div></div>`}
       <button class="btn btn-ghost btn-sm" id="btn-monthly-report">📄 ${t('downloadReport')}</button>
     </div>
     <div class="grid grid-4" style="margin-bottom:22px;">
@@ -1502,14 +1525,138 @@ function openTxModal(isIncome){
 }
 
 /* ---------------------------- SAVINGS GOALS --------------------------------- */
+/* ---------------------------- GAMIFICATION ---------------------------------- */
+// Sparstreak: Anzahl aufeinanderfolgender ABGESCHLOSSENER Monate (rückwärts ab
+// dem aktuellen Kalendermonat, nicht dem im Dashboard angezeigten Monat) mit
+// positivem Saldo (Einnahmen ≥ Ausgaben). Der laufende Monat zählt nur mit,
+// wenn er schon selbst im Plus ist; ein Monat ganz ohne Buchungen bricht den
+// Streak (kein "stiller" Fortbestand ohne echte Aktivität).
+function computeStreak(){
+  const heute = new Date();
+  let m = heute.getMonth()+1, y = heute.getFullYear();
+  let streak = 0;
+  for(let i=0;i<24;i++){
+    const buf = state.data.buchungen.filter(b=>{
+      const d = new Date(b.datum);
+      return !b.istUeberweisung && d.getFullYear()===y && (d.getMonth()+1)===m;
+    });
+    if(buf.length===0) break;
+    const ein = summeEin(buf), aus = summeAus(buf);
+    if(ein < aus) break;
+    streak++;
+    m--; if(m<1){ m=12; y--; }
+  }
+  return streak;
+}
+
+function computeBadges(){
+  const buf = gefilterteBuchungen();
+  const ein = summeEin(buf), aus = summeAus(buf);
+  const sparquote = ein>0 ? (ein-aus)/ein*100 : 0;
+  const streak = computeStreak();
+  return [
+    { id:'first_tx', icon:'🎬', name:t('badge_first_tx'), earned: state.data.buchungen.length>=1 },
+    { id:'fifty_tx', icon:'📚', name:t('badge_fifty_tx'), earned: state.data.buchungen.length>=50 },
+    { id:'century_tx', icon:'💯', name:t('badge_century_tx'), earned: state.data.buchungen.length>=100 },
+    { id:'goal_reached', icon:'🎯', name:t('badge_goal_reached'), earned: state.data.sparziele.some(s=>s.ziel>0 && s.gespart>=s.ziel) },
+    { id:'streak3', icon:'🔥', name:t('badge_streak3'), earned: streak>=3 },
+    { id:'streak6', icon:'🔥🔥', name:t('badge_streak6'), earned: streak>=6 },
+    { id:'multi_account', icon:'🏦', name:t('badge_multi_account'), earned: state.data.konten.length>=3 },
+    { id:'budgeter', icon:'📅', name:t('badge_budgeter'), earned: state.data.budgets.kategorien.length>=1 },
+    { id:'saver20', icon:'💰', name:t('badge_saver20'), earned: sparquote>=20 },
+  ];
+}
+
+function renderGamificationCard(){
+  const streak = computeStreak();
+  const badges = computeBadges();
+  const earnedCount = badges.filter(b=>b.earned).length;
+  const mz = state.data.monatsziel;
+  const buf = gefilterteBuchungen();
+  const gespart = summeEin(buf) - summeAus(buf);
+  const mzPct = mz && mz>0 ? Math.max(0, Math.min(100, gespart/mz*100)) : 0;
+
+  return `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="grid grid-2" style="gap:16px; align-items:start;">
+        <div>
+          <div class="lbl" style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">🔥 ${t('savingsStreak')}</div>
+          <div style="font-size:26px; font-weight:700; font-family:var(--font-num);">${streak} ${streak===1 ? t('month') : t('months')}</div>
+          <div class="desc" style="margin-top:2px;">${streak>0 ? t('streakGoing') : t('streakStart')}</div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div class="lbl" style="margin:0;">🎯 ${t('monthlyGoal')}</div>
+            <button class="btn btn-ghost btn-sm" id="btn-set-monthly-goal">${mz!=null ? t('edit') : t('setGoal')}</button>
+          </div>
+          ${mz!=null ? `
+            <div class="bar-track"><div class="bar-fill" style="width:${mzPct}%; background:${gespart>=mz?'var(--green)':'var(--accent)'};"></div></div>
+            <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12.5px;">
+              <span style="color:var(--muted);">${fmt(gespart)} ${t('of')} ${fmt(mz)}</span>
+              <span style="font-weight:700; color:${gespart>=mz?'var(--green)':'var(--fg)'};">${mzPct.toFixed(0)}%</span>
+            </div>
+          ` : `<div class="desc">${t('noMonthlyGoal')}</div>`}
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">🏆 ${t('achievements')}</h3>
+        <span style="font-size:12px; color:var(--muted); font-weight:600;">${earnedCount}/${badges.length}</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); gap:10px;">
+        ${badges.map(b=>`
+          <div style="text-align:center; padding:12px 6px; border-radius:12px; background:${b.earned?'var(--accent-dim)':'var(--surface2)'}; opacity:${b.earned?1:0.45};">
+            <div style="font-size:24px; margin-bottom:6px;">${b.icon}</div>
+            <div style="font-size:10.5px; font-weight:600; line-height:1.3;">${b.name}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function wireGamificationCard(){
+  document.getElementById('btn-set-monthly-goal').onclick = openMonthlyGoalModal;
+}
+
+function openMonthlyGoalModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('monthlyGoal')}</h3>
+      <div class="field"><label>${t('amount')}</label><input id="mz-amt" type="number" step="0.01" min="0" value="${state.data.monatsziel ?? ''}"/></div>
+      <div class="modal-actions">
+        ${state.data.monatsziel!=null ? `<button class="btn btn-danger" id="mz-remove">${t('delete')}</button>` : ''}
+        <button class="btn btn-ghost" id="mz-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="mz-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#mz-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  const rm = bg.querySelector('#mz-remove');
+  if(rm) rm.onclick = ()=>{ state.data.monatsziel = null; persist(); bg.remove(); render(); };
+  bg.querySelector('#mz-save').onclick = ()=>{
+    const amt = parseFloat(bg.querySelector('#mz-amt').value.replace(',','.'));
+    if(!amt || amt<=0){ toast(t('fillAllFields')); return; }
+    state.data.monatsziel = round2(amt);
+    persist(); bg.remove(); render();
+  };
+  bg.querySelector('#mz-amt').focus();
+}
+
 function renderGoals(c){
   const goals = state.data.sparziele;
   c.innerHTML = `
-    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+    ${renderGamificationCard()}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0;">🎯 ${t('goals')}</h3>
       <button class="btn btn-primary" id="btn-add-goal">${t('newGoal')}</button>
     </div>
     ${goals.length ? `<div class="grid grid-3" id="goals-grid"></div>` : `<div class="empty-state"><div class="big">🎯</div>${t('noGoals')}</div>`}
   `;
+  wireGamificationCard();
   document.getElementById('btn-add-goal').onclick = openGoalModal;
   if(goals.length){
     const grid = document.getElementById('goals-grid');
@@ -2144,7 +2291,7 @@ function renderSettings(c){
     const fresh = emptyUserData();
     await sb.from('user_data').update({
       buchungen: [], sparziele: [], wiederkehrend: [], konten: fresh.konten,
-      kategorien: fresh.kategorien, budgets: fresh.budgets, settings: {theme:'dark', lang:'de'},
+      kategorien: fresh.kategorien, budgets: fresh.budgets, monatsziel: null, settings: {theme:'dark', lang:'de'},
       updated_at: new Date().toISOString()
     }).eq('id', state.authId);
     doLogout();

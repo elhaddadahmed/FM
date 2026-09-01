@@ -136,7 +136,8 @@ const L = {
     noMonthlyGoal:"Noch kein Monatsziel festgelegt.", achievements:"Erfolge",
     badge_first_tx:"Erste Buchung", badge_fifty_tx:"50 Buchungen", badge_century_tx:"100 Buchungen",
     badge_goal_reached:"Sparziel erreicht", badge_streak3:"3-Monats-Streak", badge_streak6:"6-Monats-Streak",
-    badge_multi_account:"3+ Konten", badge_budgeter:"Erstes Budget", badge_saver20:"20% Sparquote"
+    badge_multi_account:"3+ Konten", badge_budgeter:"Erstes Budget", badge_saver20:"20% Sparquote",
+    more:"Mehr"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -200,7 +201,8 @@ const L = {
     noMonthlyGoal:"No monthly goal set yet.", achievements:"Achievements",
     badge_first_tx:"First booking", badge_fifty_tx:"50 bookings", badge_century_tx:"100 bookings",
     badge_goal_reached:"Goal reached", badge_streak3:"3-month streak", badge_streak6:"6-month streak",
-    badge_multi_account:"3+ accounts", badge_budgeter:"First budget", badge_saver20:"20% savings rate"
+    badge_multi_account:"3+ accounts", badge_budgeter:"First budget", badge_saver20:"20% savings rate",
+    more:"More"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -264,7 +266,8 @@ const L = {
     noMonthlyGoal:"لم يتم تحديد هدف شهري بعد.", achievements:"الإنجازات",
     badge_first_tx:"أول عملية", badge_fifty_tx:"50 عملية", badge_century_tx:"100 عملية",
     badge_goal_reached:"تحقيق هدف ادخار", badge_streak3:"سلسلة 3 أشهر", badge_streak6:"سلسلة 6 أشهر",
-    badge_multi_account:"3+ حسابات", badge_budgeter:"أول ميزانية", badge_saver20:"معدل ادخار 20%"
+    badge_multi_account:"3+ حسابات", badge_budgeter:"أول ميزانية", badge_saver20:"معدل ادخار 20%",
+    more:"المزيد"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -828,7 +831,13 @@ function renderApp(){
         <div class="topbar" id="topbar"></div>
         <div class="content" id="content"></div>
       </div>
-    </div>`;
+    </div>
+    <div class="fab-menu" id="fab-menu">
+      <button id="fab-income">${ICO.income} ${t('addIncome')}</button>
+      <button id="fab-expense">${ICO.expenses} ${t('addExpense')}</button>
+    </div>
+    <button class="fab" id="fab-main">+</button>
+    <div class="bottom-nav" id="bottom-nav"></div>`;
   const navItems = [
     ['dashboard', ICO.dashboard, t('dashboard')],
     ['konten', ICO.konten, t('accounts')],
@@ -850,6 +859,33 @@ function renderApp(){
   });
   document.getElementById('btn-logout').onclick = doLogout;
   document.getElementById('sidebar-backdrop').onclick = closeSidebar;
+
+  // Bottom-Nav (nur auf Mobile sichtbar): die 4 wichtigsten Tabs direkt
+  // erreichbar, "Mehr" öffnet die vollständige Seitenleiste als Drawer.
+  const bnItems = [
+    ['dashboard', ICO.dashboard, t('dashboard')],
+    ['konten', ICO.konten, t('accounts')],
+    ['expenses', ICO.expenses, t('expenses')],
+    ['goals', ICO.goals, t('goals')],
+    ['__more', '☰', t('more')],
+  ];
+  const bn = document.getElementById('bottom-nav');
+  bn.innerHTML = bnItems.map(([id,icon,label])=>
+    `<div class="bn-item ${state.tab===id?'active':''}" data-tab="${id}"><span class="ic">${icon}</span>${label}</div>`
+  ).join('');
+  bn.querySelectorAll('.bn-item').forEach(el=>{
+    el.onclick = ()=>{
+      if(el.dataset.tab==='__more'){ toggleSidebar(); return; }
+      state.tab = el.dataset.tab; closeFabMenu(); render();
+    };
+  });
+
+  // Schnell-hinzufügen (FAB): auf allen Tabs erreichbar, öffnet direkt das
+  // Einnahme/Ausgabe-Formular, ohne erst zum passenden Tab wechseln zu müssen.
+  document.getElementById('fab-main').onclick = toggleFabMenu;
+  document.getElementById('fab-income').onclick = ()=>{ closeFabMenu(); openTxModal(true); };
+  document.getElementById('fab-expense').onclick = ()=>{ closeFabMenu(); openTxModal(false); };
+
   renderTopbar();
   renderTab();
 }
@@ -861,10 +897,19 @@ function closeSidebar(){
   if(bd) bd.classList.remove('show');
 }
 function toggleSidebar(){
+  closeFabMenu();
   const sb = document.getElementById('sidebar');
   const bd = document.getElementById('sidebar-backdrop');
   if(sb) sb.classList.toggle('open');
   if(bd) bd.classList.toggle('show');
+}
+function closeFabMenu(){
+  const m = document.getElementById('fab-menu');
+  if(m) m.classList.remove('open');
+}
+function toggleFabMenu(){
+  const m = document.getElementById('fab-menu');
+  if(m) m.classList.toggle('open');
 }
 
 function renderTopbar(){

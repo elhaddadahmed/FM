@@ -213,6 +213,11 @@ a{color:inherit;}
 }
 .sidebar-backdrop.show{display:block;}
 
+/* Bottom-Nav-Leiste + Schnell-hinzufügen-Button: nur auf Mobile sichtbar (siehe Media Query) */
+.bottom-nav{display:none;}
+.fab{display:none;}
+.fab-menu{display:none;}
+
 @media (max-width:820px){
   .sb-hamburger{display:flex;}
   .sidebar{position:fixed; top:0; left:0; z-index:80; height:100%; height:100dvh; transform:translateX(-100%); transition:transform .2s;}
@@ -222,15 +227,69 @@ a{color:inherit;}
   .grid-4{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;}
   .grid-3{grid-template-columns:1fr;}
-  .content{padding:16px; padding-bottom:60px;}
-  .topbar{padding:12px 14px; flex-wrap:wrap; gap:10px;}
+  /* Platz für die Bottom-Nav (56px + Safe-Area) unten freihalten */
+  .content{padding:16px; padding-bottom:calc(78px + env(safe-area-inset-bottom));}
+  .topbar{padding:calc(12px + env(safe-area-inset-top)) 14px 12px;}
   .topbar h2{font-size:16px; max-width:52vw;}
   .month-nav{padding:5px 6px;}
   .month-nav .label{min-width:80px; font-size:12.5px;}
-  .modal{padding:20px 18px 18px;}
   .login-card{padding:26px 22px 22px;}
   .login-brand{top:20px; left:20px;}
   html[dir="rtl"] .login-brand{left:auto; right:20px;}
+
+  /* Größere Tippflächen (Apple/Google-Richtwert: min. 44px) */
+  .btn, .icon-btn, .sb-item, .chip, .tx-del, .due-badge{ min-height:44px; }
+  .btn-sm{ min-height:40px; }
+  .icon-btn{ width:40px; }
+  .chip{ padding:10px 14px; }
+  .tx-del{ opacity:1; width:40px; }
+
+  /* Verhindert, dass iOS Safari beim Fokussieren eines Inputs reinzoomt
+     (passiert nur, wenn die Schriftgröße unter 16px liegt). */
+  input, select, textarea{ font-size:16px !important; }
+
+  /* Modals als Bottom-Sheet: von unten reingleiten statt mittig zu schweben —
+     lässt sich mit dem Daumen deutlich einfacher bedienen. */
+  .modal-bg{ align-items:flex-end; padding:0; }
+  .modal{
+    width:100%; max-width:100%; border-radius:20px 20px 0 0;
+    padding:22px 18px calc(22px + env(safe-area-inset-bottom));
+    max-height:90vh; animation:sheet-up .22s ease-out;
+  }
+  @keyframes sheet-up{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+
+  /* Bottom-Nav-Leiste */
+  .bottom-nav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:85;
+    background:var(--sidebar); border-top:1px solid var(--border);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .bn-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; padding:6px 2px; border-radius:10px; color:var(--muted);
+    font-size:10px; font-weight:600; min-height:48px; user-select:none;
+  }
+  .bn-item .ic{ font-size:19px; }
+  .bn-item.active{ color:var(--accent); }
+
+  /* Schnell-hinzufügen-Button (FAB) über der Bottom-Nav */
+  .fab{
+    display:flex; position:fixed; right:18px; bottom:calc(72px + env(safe-area-inset-bottom)); z-index:86;
+    width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--purple));
+    color:#fff; align-items:center; justify-content:center; font-size:24px; border:none;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  html[dir="rtl"] .fab{ right:auto; left:18px; }
+  .fab-menu{
+    display:none; position:fixed; right:18px; bottom:calc(132px + env(safe-area-inset-bottom)); z-index:86;
+    flex-direction:column; gap:10px;
+  }
+  .fab-menu.open{ display:flex; }
+  html[dir="rtl"] .fab-menu{ right:auto; left:18px; }
+  .fab-menu button{
+    display:flex; align-items:center; gap:8px; padding:11px 16px; border-radius:14px; border:1px solid var(--border);
+    background:var(--surface); color:var(--fg); font-size:13px; font-weight:600; box-shadow:var(--shadow); white-space:nowrap;
+  }
 }
 
 @media (max-width:480px){

@@ -20,6 +20,7 @@ KAT_ICON['Überweisung'] = '🔄';
 const KONTO_TYP_ICON = { bank:"🏦", bargeld:"💵", kreditkarte:"💳", sonstiges:"📁" };
 const KONTO_TYPEN = ["bank","bargeld","kreditkarte","sonstiges"];
 const FREE_KONTEN_LIMIT = 2; // Free-Plan: max. 2 Konten, Pro: unbegrenzt
+const FREE_BUDGET_LIMIT = 3; // Free-Plan: max. 3 Kategorie-Budgets, Pro: unbegrenzt
 
 // Stichwort → Kategorie für die automatische Kategorisierung beim Erfassen
 // einer Buchung. Bewusst simpel (Substring-Suche in der Beschreibung),
@@ -121,6 +122,8 @@ const L = {
     addBudget:"Budget hinzufügen", noBudgets:"Noch keine Budgets angelegt.", budgetLeft:"noch übrig",
     budgetOverBy:"überschritten um", suggestBudgets:"Vorschlag berechnen", suggestionsAdded:"Budgets vorgeschlagen",
     noSuggestions:"Keine Vorschläge möglich — noch nicht genug Ausgaben-Historie.", allCategoriesHaveBudget:"Für alle Kategorien ist bereits ein Budget angelegt.",
+    budgetLimitReached:`Im Free-Plan sind maximal ${FREE_BUDGET_LIMIT} Kategorie-Budgets möglich. Mit Pro unbegrenzt.`,
+    pdfReportProOnly:"PDF-Berichte sind ein Pro-Feature. Upgrade in den Einstellungen möglich.",
     subsPerMonth:"Abos & Wiederkehrend / Monat", subsPerYear:"Hochgerechnet / Jahr", interval:"Intervall",
     monthly:"Monatlich", yearly:"Jährlich", reminderDays:"Erinnerung (Tage vorher)", cancelBy:"Kündigungsfrist",
     downloadReport:"Monatsbericht (PDF)", allTime:"Gesamter Zeitraum", thisMonthScope:"Aktueller Monat",
@@ -146,7 +149,22 @@ const L = {
     avatarUpdated:"Profilbild aktualisiert.", attachReceipt:"Beleg", close:"Schließen", loading:"Lädt…",
     uploadReceipt:"Beleg hochladen", receiptLoadError:"Beleg konnte nicht geladen werden.", openReceipt:"Beleg öffnen",
     removeReceipt:"Beleg entfernen", receiptTooLarge:"Datei ist zu groß (max. 8 MB).", uploading:"Wird hochgeladen…",
-    receiptUploadError:"Beleg konnte nicht hochgeladen werden.", receiptAttached:"Beleg angehängt."
+    receiptUploadError:"Beleg konnte nicht hochgeladen werden.", receiptAttached:"Beleg angehängt.",
+    challenges:"Challenges", newChallenge:"Challenge starten", challengeType:"Art der Challenge",
+    challenge_no_spend:"Keine Ausgaben in Kategorie", challenge_save:"Betrag sparen", challenge_limit:"Ausgabenlimit einhalten",
+    durationDays:"Dauer (Tage)", start:"Starten", challengeOnTrack:"läuft gut", challengeSuccess:"Geschafft",
+    challengeFailed:"Nicht geschafft", challengeActive:"Aktiv", noChallenges:"Noch keine Challenge gestartet.",
+    household:"Familienkonto", householdOwnerDesc:"Andere Personen einladen, die deine Finanzdaten gemeinsam mit dir sehen und bearbeiten können.",
+    householdProOnly:"Andere einladen ist ein Pro-Feature. Als Mitglied kannst du trotzdem kostenlos beitreten, wenn dich jemand einlädt.",
+    username:"Benutzername", invite:"Einladen", noInvitees:"Noch niemanden eingeladen.",
+    householdMemberDesc:"Konten, zu denen du eingeladen wurdest.", noHouseholds:"Du bist in keinem geteilten Konto Mitglied.",
+    active:"aktiv", switchTo:"Wechseln", leaveHousehold:"Verlassen/Entfernen",
+    userNotFound:"Kein Nutzer mit diesem Benutzernamen gefunden.", alreadyInvited:"Diese Person ist bereits eingeladen.",
+    cantInviteSelf:"Du kannst dich nicht selbst einladen.", inviteError:"Einladung fehlgeschlagen.", inviteSent:"Eingeladen!",
+    viewingHousehold:"Du siehst gerade das Konto von", backToOwnData:"Zurück zu meinem Konto",
+    householdSwitchError:"Konnte nicht zu diesem Konto wechseln.",
+    browserNotifications:"Browser-Benachrichtigungen", browserNotificationsDesc:"Zeigt dringende Hinweise (z.B. Budget überschritten) als System-Benachrichtigung, solange die App in einem Tab offen ist.",
+    notificationsDenied:"Benachrichtigungen wurden im Browser nicht erlaubt."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -195,6 +213,8 @@ const L = {
     addBudget:"Add budget", noBudgets:"No budgets set up yet.", budgetLeft:"left",
     budgetOverBy:"over by", suggestBudgets:"Suggest budgets", suggestionsAdded:"Budgets suggested",
     noSuggestions:"No suggestions possible yet — not enough spending history.", allCategoriesHaveBudget:"All categories already have a budget.",
+    budgetLimitReached:`The Free plan allows up to ${FREE_BUDGET_LIMIT} category budgets. Unlimited with Pro.`,
+    pdfReportProOnly:"PDF reports are a Pro feature. You can upgrade in Settings.",
     subsPerMonth:"Subscriptions & recurring / month", subsPerYear:"Projected / year", interval:"Interval",
     monthly:"Monthly", yearly:"Yearly", reminderDays:"Reminder (days before)", cancelBy:"Cancel by",
     downloadReport:"Monthly report (PDF)", allTime:"All time", thisMonthScope:"Current month",
@@ -220,7 +240,22 @@ const L = {
     avatarUpdated:"Profile picture updated.", attachReceipt:"Receipt", close:"Close", loading:"Loading…",
     uploadReceipt:"Upload receipt", receiptLoadError:"Receipt could not be loaded.", openReceipt:"Open receipt",
     removeReceipt:"Remove receipt", receiptTooLarge:"File is too large (max. 8 MB).", uploading:"Uploading…",
-    receiptUploadError:"Receipt could not be uploaded.", receiptAttached:"Receipt attached."
+    receiptUploadError:"Receipt could not be uploaded.", receiptAttached:"Receipt attached.",
+    challenges:"Challenges", newChallenge:"Start challenge", challengeType:"Challenge type",
+    challenge_no_spend:"No spending in category", challenge_save:"Save an amount", challenge_limit:"Stay under a spending limit",
+    durationDays:"Duration (days)", start:"Start", challengeOnTrack:"on track", challengeSuccess:"Success",
+    challengeFailed:"Not achieved", challengeActive:"Active", noChallenges:"No challenge started yet.",
+    household:"Family account", householdOwnerDesc:"Invite others to view and edit your financial data together with you.",
+    householdProOnly:"Inviting others is a Pro feature. As a member you can still join for free if someone invites you.",
+    username:"Username", invite:"Invite", noInvitees:"Nobody invited yet.",
+    householdMemberDesc:"Accounts you've been invited to.", noHouseholds:"You're not a member of any shared account.",
+    active:"active", switchTo:"Switch", leaveHousehold:"Leave/remove",
+    userNotFound:"No user found with that username.", alreadyInvited:"This person is already invited.",
+    cantInviteSelf:"You can't invite yourself.", inviteError:"Invite failed.", inviteSent:"Invited!",
+    viewingHousehold:"You're viewing the account of", backToOwnData:"Back to my account",
+    householdSwitchError:"Could not switch to this account.",
+    browserNotifications:"Browser notifications", browserNotificationsDesc:"Shows urgent alerts (e.g. budget exceeded) as a system notification while the app is open in a tab.",
+    notificationsDenied:"Notifications were not allowed by the browser."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -269,6 +304,8 @@ const L = {
     addBudget:"إضافة ميزانية", noBudgets:"لا توجد ميزانيات بعد.", budgetLeft:"متبقٍ",
     budgetOverBy:"تجاوزت بمقدار", suggestBudgets:"اقتراح ميزانية", suggestionsAdded:"تم اقتراح ميزانيات",
     noSuggestions:"لا يمكن تقديم اقتراحات بعد — لا يوجد سجل إنفاق كافٍ.", allCategoriesHaveBudget:"جميع الفئات لديها ميزانية بالفعل.",
+    budgetLimitReached:`تسمح الخطة المجانية بحد أقصى ${FREE_BUDGET_LIMIT} ميزانيات فئات. غير محدود مع Pro.`,
+    pdfReportProOnly:"تقارير PDF ميزة حصرية لـ Pro. يمكنك الترقية من الإعدادات.",
     subsPerMonth:"الاشتراكات والمدفوعات المتكررة / شهريًا", subsPerYear:"المتوقع / سنويًا", interval:"الفاصل الزمني",
     monthly:"شهري", yearly:"سنوي", reminderDays:"تذكير (أيام قبل الاستحقاق)", cancelBy:"مهلة الإلغاء",
     downloadReport:"تقرير شهري (PDF)", allTime:"كل الفترة", thisMonthScope:"الشهر الحالي",
@@ -294,7 +331,22 @@ const L = {
     avatarUpdated:"تم تحديث صورة الملف الشخصي.", attachReceipt:"إيصال", close:"إغلاق", loading:"جارٍ التحميل…",
     uploadReceipt:"رفع إيصال", receiptLoadError:"تعذّر تحميل الإيصال.", openReceipt:"فتح الإيصال",
     removeReceipt:"إزالة الإيصال", receiptTooLarge:"الملف كبير جدًا (الحد الأقصى 8 ميغابايت).", uploading:"جارٍ الرفع…",
-    receiptUploadError:"تعذّر رفع الإيصال.", receiptAttached:"تم إرفاق الإيصال."
+    receiptUploadError:"تعذّر رفع الإيصال.", receiptAttached:"تم إرفاق الإيصال.",
+    challenges:"التحديات", newChallenge:"بدء تحدٍ", challengeType:"نوع التحدي",
+    challenge_no_spend:"عدم الإنفاق في فئة", challenge_save:"ادخار مبلغ", challenge_limit:"الالتزام بحد إنفاق",
+    durationDays:"المدة (أيام)", start:"ابدأ", challengeOnTrack:"سائر بشكل جيد", challengeSuccess:"تم الإنجاز",
+    challengeFailed:"لم يتحقق", challengeActive:"نشط", noChallenges:"لم يتم بدء أي تحدٍ بعد.",
+    household:"حساب العائلة", householdOwnerDesc:"ادعُ أشخاصًا آخرين لعرض وتعديل بياناتك المالية معك.",
+    householdProOnly:"دعوة الآخرين ميزة حصرية لـ Pro. كعضو، يمكنك الانضمام مجانًا إذا دعاك أحدهم.",
+    username:"اسم المستخدم", invite:"دعوة", noInvitees:"لم تتم دعوة أحد بعد.",
+    householdMemberDesc:"الحسابات التي تمت دعوتك إليها.", noHouseholds:"أنت لست عضوًا في أي حساب مشترك.",
+    active:"نشط", switchTo:"التبديل", leaveHousehold:"مغادرة/إزالة",
+    userNotFound:"لم يتم العثور على مستخدم بهذا الاسم.", alreadyInvited:"تمت دعوة هذا الشخص بالفعل.",
+    cantInviteSelf:"لا يمكنك دعوة نفسك.", inviteError:"فشلت الدعوة.", inviteSent:"تمت الدعوة!",
+    viewingHousehold:"أنت تشاهد حاليًا حساب", backToOwnData:"العودة إلى حسابي",
+    householdSwitchError:"تعذّر التبديل إلى هذا الحساب.",
+    browserNotifications:"إشعارات المتصفح", browserNotificationsDesc:"يعرض التنبيهات العاجلة (مثل تجاوز الميزانية) كإشعار نظام طالما التطبيق مفتوح في علامة تبويب.",
+    notificationsDenied:"لم يسمح المتصفح بالإشعارات."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -419,6 +471,35 @@ const Store = {
       await this.createFreeSubscription(userId);
       return 'free';
     }catch(e){ console.error('getPlan Fehler:', e); return 'free'; }
+  },
+  // --- Familienkonto ---
+  async inviteHouseholdMember(ownerId, username){
+    try{
+      const { data: memberId, error: e1 } = await sb.rpc('find_user_id_by_username', { p_username: username });
+      if(e1 || !memberId) return { ok:false, reason:'not_found' };
+      if(memberId === ownerId) return { ok:false, reason:'self' };
+      const { error } = await sb.from('household_members').insert({ household_owner_id: ownerId, member_id: memberId, member_username: username.trim() });
+      if(error) return { ok:false, reason: /duplicate|already exists/i.test(error.message) ? 'already' : 'error' };
+      return { ok:true };
+    }catch(e){ console.error('inviteHouseholdMember Fehler:', e); return { ok:false, reason:'error' }; }
+  },
+  async listMyInvitees(ownerId){
+    const { data, error } = await sb.from('household_members').select('member_id, member_username, created_at').eq('household_owner_id', ownerId);
+    return error ? [] : (data||[]);
+  },
+  async listMyHouseholds(memberId){
+    const { data, error } = await sb.from('household_members').select('household_owner_id, created_at').eq('member_id', memberId);
+    if(error || !data) return [];
+    const out = [];
+    for(const row of data){
+      const { data: ud } = await sb.from('user_data').select('display_name').eq('id', row.household_owner_id).single();
+      out.push({ ownerId: row.household_owner_id, ownerName: (ud && ud.display_name) || '?' });
+    }
+    return out;
+  },
+  async removeHouseholdMember(ownerId, memberId){
+    const { error } = await sb.from('household_members').delete().eq('household_owner_id', ownerId).eq('member_id', memberId);
+    return !error;
   }
 };
 
@@ -489,6 +570,11 @@ const state = {
   plan: 'free', // 'free' | 'pro' — kommt aus der subscriptions-Tabelle, nicht clientseitig änderbar
   autoCategorize: true,
   currency: 'EUR',
+  notificationsEnabled: false,
+  dataOwnerId: null,       // wessen Daten gerade angezeigt werden (eigene ID oder ein Haushalts-Eigentümer)
+  householdMode: false,    // true = wir betrachten gerade fremde (geteilte) Daten
+  householdOwnerName: '',
+  dataOwnerSettings: null, // Settings des Haushalts-Eigentümers, damit persist() sie nicht überschreibt
   txFilter: { search:'', kategorie:'', kontoId:'' },
   loginError: '',
   regError: ''
@@ -504,7 +590,9 @@ function applyTheme(){
 
 async function persist(){
   if(!state.authId) return;
-  state.data.settings = { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize, currency: state.currency };
+  state.data.settings = state.householdMode
+    ? (state.dataOwnerSettings || { theme:'dark', lang:'de' })
+    : { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize, currency: state.currency, notificationsEnabled: state.notificationsEnabled };
   const ok = await Store.saveUserData(state.dataOwnerId||state.authId, state.data);
   window.__syncOk = ok;
   injectStorageWarning();
@@ -826,6 +914,7 @@ async function enterApp(authUser, username){
   state.lang = data.settings.lang || 'de';
   state.autoCategorize = data.settings.autoCategorize !== false; // Standard: an
   state.currency = data.settings.currency || 'EUR';
+  state.notificationsEnabled = !!data.settings.notificationsEnabled;
   state.plan = await Store.getPlan(authUser.id);
   state.screen = 'app';
   state.tab = 'dashboard';
@@ -840,8 +929,31 @@ async function enterApp(authUser, username){
 async function doLogout(){
   await sb.auth.signOut();
   state.screen='login'; state.authId=null; state.dataOwnerId=null; state.authUsername=null; state.data=emptyUserData();
-  state.plan='free'; state.currency='EUR';
+  state.plan='free'; state.currency='EUR'; state.householdMode=false; state.dataOwnerSettings=null;
   state.theme='dark'; applyTheme();
+  render();
+}
+
+async function switchToHousehold(ownerId, ownerName){
+  const data = await Store.getUserData(ownerId);
+  if(!data){ toast(t('householdSwitchError')); return; }
+  const migrated = migrateData(data);
+  state.dataOwnerId = ownerId;
+  state.householdMode = true;
+  state.householdOwnerName = ownerName;
+  state.dataOwnerSettings = migrated.settings; // eigene Theme/Sprache/Währung bleiben unverändert
+  state.data = migrated;
+  state.tab = 'dashboard';
+  render();
+}
+
+async function switchToOwnData(){
+  const data = await Store.getUserData(state.authId);
+  state.dataOwnerId = state.authId;
+  state.householdMode = false;
+  state.dataOwnerSettings = null;
+  state.data = data ? migrateData(data) : migrateData(emptyUserData());
+  state.tab = 'dashboard';
   render();
 }
 
@@ -866,6 +978,7 @@ function renderApp(){
       </div>
       <div class="main">
         <div class="topbar" id="topbar"></div>
+        <div id="household-banner"></div>
         <div class="content" id="content"></div>
       </div>
     </div>
@@ -924,7 +1037,21 @@ function renderApp(){
   document.getElementById('fab-expense').onclick = ()=>{ closeFabMenu(); openTxModal(false); };
 
   renderTopbar();
+  renderHouseholdBanner();
   renderTab();
+}
+
+function renderHouseholdBanner(){
+  const el = document.getElementById('household-banner');
+  if(!el) return;
+  if(!state.householdMode){ el.innerHTML=''; return; }
+  el.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+                background:var(--accent-dim); border-bottom:1px solid var(--border); padding:9px 20px; font-size:12.5px; font-weight:600;">
+      <span>👪 ${t('viewingHousehold')} ${escapeHtml(state.householdOwnerName)}</span>
+      <button class="btn btn-ghost btn-sm" id="btn-leave-household-view">${t('backToOwnData')}</button>
+    </div>`;
+  document.getElementById('btn-leave-household-view').onclick = switchToOwnData;
 }
 
 function closeSidebar(){
@@ -1177,9 +1304,10 @@ function renderBudget(c){
       <h3 style="margin:0;">${t('categoryBudgets')}</h3>
       <div style="display:flex; gap:10px;">
         ${suggestable ? `<button class="btn btn-ghost btn-sm" id="btn-suggest">💡 ${t('suggestBudgets')}</button>` : ''}
-        <button class="btn btn-primary btn-sm" id="btn-add-budget">+ ${t('addBudget')}</button>
+        <button class="btn btn-primary btn-sm" id="btn-add-budget">${!isPro() && b.kategorien.length>=FREE_BUDGET_LIMIT ? '⭐ ' : ''}+ ${t('addBudget')}</button>
       </div>
     </div>
+    ${!isPro() ? `<div class="desc" style="margin:-6px 0 14px;">${t('budgetLimitReached')} (${b.kategorien.length}/${FREE_BUDGET_LIMIT})</div>` : ''}
     ${b.kategorien.length ? `<div class="grid grid-2" id="budget-grid"></div>` : `<div class="empty-state"><div class="big">📅</div>${t('noBudgets')}</div>`}
   `;
   document.getElementById('btn-set-overall').onclick = ()=>openOverallBudgetModal();
@@ -1257,6 +1385,10 @@ function openOverallBudgetModal(){
 }
 
 function openBudgetModal(existing){
+  if(!existing && !isPro() && state.data.budgets.kategorien.length>=FREE_BUDGET_LIMIT){
+    toast(t('budgetLimitReached'));
+    return;
+  }
   const cats = allCats(false).filter(k=> existing ? true : !state.data.budgets.kategorien.some(x=>x.kategorie===k.key));
   if(!existing && cats.length===0){ toast(t('allCategoriesHaveBudget')); return; }
   let selectedCat = existing ? existing.kategorie : cats[0].key;
@@ -1365,6 +1497,23 @@ function buildNotifications(){
   return mel;
 }
 
+// Zeigt echte Browser-Benachrichtigungen (OS-Ebene) für die dringendsten
+// (RED) Hinweise — nur wenn der Nutzer das explizit erlaubt hat UND die
+// Berechtigung im Browser erteilt wurde. Merkt sich pro Sitzung, welche
+// Texte schon gezeigt wurden, damit nicht bei jedem Re-Render dieselbe
+// Meldung erneut aufploppt.
+const __shownNotifications = new Set();
+function maybeShowBrowserNotifications(notifs){
+  if(!state.notificationsEnabled) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  notifs.filter(n=>n.level==='RED').forEach(n=>{
+    if(__shownNotifications.has(n.text)) return;
+    __shownNotifications.add(n.text);
+    try{ new Notification('FinanzManager', { body: n.text }); }
+    catch(e){ console.error('Notification Fehler:', e); }
+  });
+}
+
 function renderDashboard(c){
   const buf = gefilterteBuchungen();
   const ein = summeEin(buf), aus = summeAus(buf);
@@ -1421,6 +1570,7 @@ function renderDashboard(c){
   const avgAusgabe = ausgabenListe.length ? aus/ausgabenListe.length : 0;
 
   const notifs = buildNotifications();
+  maybeShowBrowserNotifications(notifs);
   const streak = computeStreak();
 
   function deltaBadge(d){
@@ -1434,7 +1584,7 @@ function renderDashboard(c){
   c.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
       ${streak>0 ? `<div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--amber);">🔥 ${streak} ${streak===1?t('month'):t('months')} ${t('savingsStreak')}</div>` : `<div></div>`}
-      <button class="btn btn-ghost btn-sm" id="btn-monthly-report">📄 ${t('downloadReport')}</button>
+      <button class="btn btn-ghost btn-sm" id="btn-monthly-report">📄 ${!isPro()?'⭐ ':''}${t('downloadReport')}</button>
     </div>
     <div class="grid grid-4" style="margin-bottom:14px;">
       ${kpiCard(t('totalIncome'), fmt(ein), 'pos', '📈')}
@@ -1919,10 +2069,151 @@ function openMonthlyGoalModal(){
   bg.querySelector('#mz-amt').focus();
 }
 
+/* ---------------------------- CHALLENGES ------------------------------------ */
+function addDays(iso, days){
+  const d = new Date(iso+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+
+function evaluateChallenge(ch){
+  const today = todayISO();
+  const relevant = state.data.buchungen.filter(b=> !b.istUeberweisung && b.datum>=ch.start && b.datum<=ch.ende);
+  let progress=0, success=false, label='';
+  if(ch.typ==='no_spend'){
+    const violations = relevant.filter(b=>!b.istEinnahme && b.kategorie===ch.kategorie);
+    success = violations.length===0;
+    progress = success ? 100 : 0;
+    label = violations.length===0
+      ? t('challengeOnTrack')
+      : `${violations.length} ${state.lang==='en'?'booking(s) broke it':'Buchung(en) haben sie gebrochen'}`;
+  } else if(ch.typ==='save_amount'){
+    const net = relevant.reduce((s,b)=> s+(b.istEinnahme?b.betrag:-b.betrag),0);
+    progress = ch.betrag>0 ? Math.max(0,Math.min(100, net/ch.betrag*100)) : 0;
+    success = net>=ch.betrag;
+    label = `${fmt(Math.max(0,net))} ${t('of')} ${fmt(ch.betrag)}`;
+  } else if(ch.typ==='spend_limit'){
+    const spent = relevant.filter(b=>!b.istEinnahme).reduce((s,b)=>s+b.betrag,0);
+    progress = ch.betrag>0 ? Math.min(100, spent/ch.betrag*100) : 0;
+    success = spent<=ch.betrag;
+    label = `${fmt(spent)} ${t('of')} ${fmt(ch.betrag)}`;
+  }
+  const ended = today > ch.ende;
+  const status = !ended ? 'aktiv' : (success ? 'geschafft' : 'gescheitert');
+  return { status, progress, label };
+}
+
+function challengeTitle(ch){
+  if(ch.typ==='no_spend') return `${t('challenge_no_spend')}: ${catLabel(ch.kategorie)}`;
+  if(ch.typ==='save_amount') return `${t('challenge_save')}: ${fmt(ch.betrag)}`;
+  if(ch.typ==='spend_limit') return `${t('challenge_limit')}: ${fmt(ch.betrag)}`;
+  return '';
+}
+
+function renderChallengesCard(){
+  const list = [...state.data.challenges].sort((a,b)=> b.start.localeCompare(a.start));
+  return `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">🏁 ${t('challenges')}</h3>
+        <button class="btn btn-primary btn-sm" id="btn-new-challenge">+ ${t('newChallenge')}</button>
+      </div>
+      ${list.length ? list.map(ch=>{
+        const ev = evaluateChallenge(ch);
+        const col = ev.status==='geschafft' ? 'var(--green)' : ev.status==='gescheitert' ? 'var(--red)' : 'var(--accent)';
+        const statusLabel = ev.status==='geschafft' ? '🎉 '+t('challengeSuccess') : ev.status==='gescheitert' ? '😕 '+t('challengeFailed') : t('challengeActive');
+        return `<div style="padding:12px 0; border-bottom:1px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="font-weight:600; font-size:13px;">${challengeTitle(ch)}</div>
+            <button class="icon-btn" data-del-challenge="${ch.id}" title="${t('delete')}">🗑</button>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${ev.progress}%; background:${col};"></div></div>
+          <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--muted);">
+            <span>${ch.start} → ${ch.ende}</span>
+            <span style="font-weight:700; color:${col};">${statusLabel}</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">${ev.label}</div>
+        </div>`;
+      }).join('') : `<div class="desc" style="padding:6px 0;">${t('noChallenges')}</div>`}
+    </div>
+  `;
+}
+
+function wireChallengesCard(){
+  document.getElementById('btn-new-challenge').onclick = openNewChallengeModal;
+  document.querySelectorAll('[data-del-challenge]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.data.challenges = state.data.challenges.filter(c=>c.id!==btn.dataset.delChallenge);
+      persist(); render();
+    };
+  });
+}
+
+function openNewChallengeModal(){
+  let typ = 'no_spend';
+  const expenseCats = allCats(false);
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('newChallenge')}</h3>
+      <div class="field"><label>${t('challengeType')}</label>
+        <div class="seg" id="ch-typ" style="flex-direction:column; height:auto; gap:6px; padding:6px;">
+          <button class="active" data-v="no_spend" style="justify-content:flex-start; padding:10px;">🚫 ${t('challenge_no_spend')}</button>
+          <button data-v="save_amount" style="justify-content:flex-start; padding:10px;">💰 ${t('challenge_save')}</button>
+          <button data-v="spend_limit" style="justify-content:flex-start; padding:10px;">📉 ${t('challenge_limit')}</button>
+        </div>
+      </div>
+      <div id="ch-fields"></div>
+      <div class="field"><label>${t('durationDays')}</label><input id="ch-days" type="number" min="1" step="1" value="7"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="ch-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="ch-save">${t('start')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const fieldsEl = bg.querySelector('#ch-fields');
+  function refreshFields(){
+    if(typ==='no_spend'){
+      fieldsEl.innerHTML = `<div class="field"><label>${t('category')}</label>
+        <div class="chip-row" id="ch-cat">${expenseCats.map((k,i)=>`<div class="chip ${i===0?'active':''}" data-k="${k.key}">${k.icon} ${catLabel(k.key)}</div>`).join('')}</div>
+      </div>`;
+      fieldsEl.querySelectorAll('#ch-cat .chip').forEach(ch=>{
+        ch.onclick = ()=>{ fieldsEl.querySelectorAll('#ch-cat .chip').forEach(x=>x.classList.toggle('active', x===ch)); };
+      });
+    } else {
+      fieldsEl.innerHTML = `<div class="field"><label>${t('amount')}</label><input id="ch-amt" type="number" min="1" step="0.01"/></div>`;
+    }
+  }
+  refreshFields();
+  bg.querySelectorAll('#ch-typ button').forEach(b=>{
+    b.onclick = ()=>{ typ = b.dataset.v; bg.querySelectorAll('#ch-typ button').forEach(x=>x.classList.toggle('active', x===b)); refreshFields(); };
+  });
+  bg.querySelector('#ch-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#ch-save').onclick = ()=>{
+    const days = parseInt(bg.querySelector('#ch-days').value,10) || 7;
+    const start = todayISO();
+    const ende = addDays(start, days-1);
+    let ch = { id:uid(), typ, start, ende };
+    if(typ==='no_spend'){
+      const active = fieldsEl.querySelector('#ch-cat .chip.active');
+      ch.kategorie = active ? active.dataset.k : expenseCats[0].key;
+    } else {
+      const amt = parseFloat(fieldsEl.querySelector('#ch-amt').value.replace(',','.'));
+      if(!amt || amt<=0){ toast(t('fillAllFields')); return; }
+      ch.betrag = round2(amt);
+    }
+    state.data.challenges.push(ch);
+    persist(); bg.remove(); render();
+  };
+}
+
 function renderGoals(c){
   const goals = state.data.sparziele;
   c.innerHTML = `
     ${renderGamificationCard()}
+    ${renderChallengesCard()}
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
       <h3 style="margin:0;">🎯 ${t('goals')}</h3>
       <button class="btn btn-primary" id="btn-add-goal">${t('newGoal')}</button>
@@ -1930,6 +2221,7 @@ function renderGoals(c){
     ${goals.length ? `<div class="grid grid-3" id="goals-grid"></div>` : `<div class="empty-state"><div class="big">🎯</div>${t('noGoals')}</div>`}
   `;
   wireGamificationCard();
+  wireChallengesCard();
   document.getElementById('btn-add-goal').onclick = openGoalModal;
   if(goals.length){
     const grid = document.getElementById('goals-grid');
@@ -2516,6 +2808,13 @@ function renderSettings(c){
         <button class="btn btn-ghost btn-sm" id="btn-change-pw">${t('changePassword')}</button>
       </div>
       <div class="settings-row">
+        <div><div class="lbl">${t('browserNotifications')}</div><div class="desc">${t('browserNotificationsDesc')}</div></div>
+        <div class="seg" id="notif-seg" style="width:110px;">
+          <button data-v="on" class="${state.notificationsEnabled?'active':''}">${state.lang==='en'?'On':'An'}</button>
+          <button data-v="off" class="${!state.notificationsEnabled?'active':''}">${state.lang==='en'?'Off':'Aus'}</button>
+        </div>
+      </div>
+      <div class="settings-row">
         <div><div class="lbl">${t('currency')}</div><div class="desc">${state.lang==='en'?'Currency used for all amounts':state.lang==='ar'?'العملة المستخدمة لجميع المبالغ':'Währung für alle Beträge in der App'}</div></div>
         <select id="currency-sel" style="background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:8px 10px; font-size:12.5px;">
           ${CURRENCIES.map(c=>`<option value="${c}" ${state.currency===c?'selected':''}>${c}</option>`).join('')}
@@ -2541,13 +2840,17 @@ function renderSettings(c){
       </div>
       <div class="settings-row">
         <div><div class="lbl">${t('downloadReport')}</div><div class="desc">${state.lang==='en'?'PDF summary for the currently selected month':state.lang==='ar'?'ملخص PDF للشهر المحدد حاليًا':'PDF-Zusammenfassung für den aktuell gewählten Monat'}</div></div>
-        <button class="btn btn-ghost btn-sm" id="btn-report">📄 PDF</button>
+        <button class="btn btn-ghost btn-sm" id="btn-report">📄 ${!isPro()?'⭐ ':''}PDF</button>
       </div>
       <div class="settings-row">
         <div><div class="lbl">${t('importCsv')}</div><div class="desc">${state.lang==='en'?'Add bookings from a CSV file (same format as export)':state.lang==='ar'?'إضافة عمليات من ملف CSV (بنفس تنسيق التصدير)':'Buchungen aus einer CSV-Datei hinzufügen (gleiches Format wie beim Export)'}</div></div>
         <label class="btn btn-ghost btn-sm" for="file-import" style="cursor:pointer;">⬆ CSV</label>
         <input type="file" id="file-import" accept=".csv,text/csv" style="display:none;"/>
       </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:10px;">👪 ${t('household')}</h3>
+      <div id="household-section"><div class="desc">${t('loading')}</div></div>
     </div>
     <div class="card" style="margin-bottom:16px;">
       <h3 style="margin-bottom:10px;">${t('manageCategories')}</h3>
@@ -2571,6 +2874,17 @@ function renderSettings(c){
     b.onclick = ()=>{ state.autoCategorize = b.dataset.v==='on'; persist(); render(); };
   });
   document.getElementById('currency-sel').onchange = e=>{ state.currency = e.target.value; persist(); render(); };
+  document.querySelectorAll('#notif-seg button').forEach(b=>{
+    b.onclick = async ()=>{
+      const wantsOn = b.dataset.v==='on';
+      if(wantsOn && 'Notification' in window && Notification.permission!=='granted'){
+        const perm = await Notification.requestPermission();
+        if(perm!=='granted'){ toast(t('notificationsDenied')); return; }
+      }
+      state.notificationsEnabled = wantsOn;
+      persist(); render();
+    };
+  });
   document.getElementById('btn-change-pw').onclick = openChangePasswordModal;
   document.getElementById('profile-avatar').onclick = ()=> document.getElementById('avatar-file').click();
   document.getElementById('avatar-file').addEventListener('change', uploadAvatar);
@@ -2583,6 +2897,7 @@ function renderSettings(c){
   if(upBtn) upBtn.onclick = ()=> toast(t('upgradeComingSoon'));
   renderCategoryManager();
   document.getElementById('btn-add-cat').onclick = openCategoryModal;
+  loadHouseholdSection();
   document.getElementById('btn-del-account').onclick = async ()=>{
     if(!confirm(state.lang==='en'
       ? 'Really delete all your data? This cannot be undone. (Your login itself stays; contact the site admin to remove it entirely.)'
@@ -2671,6 +2986,75 @@ function openChangePasswordModal(){
     }
   };
   bg.querySelector('#pw-new').focus();
+}
+
+async function loadHouseholdSection(){
+  const el = document.getElementById('household-section');
+  if(!el) return;
+  const [invitees, households] = await Promise.all([
+    Store.listMyInvitees(state.authId),
+    Store.listMyHouseholds(state.authId)
+  ]);
+
+  el.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="desc" style="margin-bottom:8px;">${t('householdOwnerDesc')}</div>
+      ${isPro() ? `
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input id="hh-username" placeholder="${t('username')}" style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 12px; font-size:13px;"/>
+          <button class="btn btn-primary btn-sm" id="hh-invite">${t('invite')}</button>
+        </div>
+      ` : `<div class="desc" style="color:var(--amber);">⭐ ${t('householdProOnly')}</div>`}
+      ${invitees.length ? invitees.map(m=>`
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px;">
+          <span>@${escapeHtml(m.member_username||'?')}</span>
+          <button class="icon-btn" data-remove-member="${m.member_id}" title="${t('delete')}">🗑</button>
+        </div>`).join('') : `<div class="desc" style="padding:4px 0;">${t('noInvitees')}</div>`}
+    </div>
+    <div>
+      <div class="desc" style="margin-bottom:8px;">${t('householdMemberDesc')}</div>
+      ${households.length ? households.map(h=>`
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px;">
+          <span>${escapeHtml(h.ownerName)}${state.dataOwnerId===h.ownerId?' · <b style="color:var(--accent);">'+t('active')+'</b>':''}</span>
+          <div style="display:flex; gap:6px;">
+            ${state.dataOwnerId!==h.ownerId ? `<button class="btn btn-ghost btn-sm" data-switch-household="${h.ownerId}" data-owner-name="${escapeHtml(h.ownerName)}">${t('switchTo')}</button>` : ''}
+            <button class="icon-btn" data-leave-household="${h.ownerId}" title="${t('leaveHousehold')}">🚪</button>
+          </div>
+        </div>`).join('') : `<div class="desc" style="padding:4px 0;">${t('noHouseholds')}</div>`}
+    </div>
+  `;
+
+  const inviteBtn = document.getElementById('hh-invite');
+  if(inviteBtn){
+    inviteBtn.onclick = async ()=>{
+      const username = document.getElementById('hh-username').value.trim();
+      if(!username){ toast(t('fillAllFields')); return; }
+      const res = await Store.inviteHouseholdMember(state.authId, username);
+      if(!res.ok){
+        toast(res.reason==='not_found' ? t('userNotFound') : res.reason==='already' ? t('alreadyInvited') : res.reason==='self' ? t('cantInviteSelf') : t('inviteError'));
+        return;
+      }
+      toast(t('inviteSent'));
+      loadHouseholdSection();
+    };
+  }
+  el.querySelectorAll('[data-remove-member]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      await Store.removeHouseholdMember(state.authId, btn.dataset.removeMember);
+      loadHouseholdSection();
+    };
+  });
+  el.querySelectorAll('[data-switch-household]').forEach(btn=>{
+    btn.onclick = ()=> switchToHousehold(btn.dataset.switchHousehold, btn.dataset.ownerName);
+  });
+  el.querySelectorAll('[data-leave-household]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const ownerId = btn.dataset.leaveHousehold;
+      await Store.removeHouseholdMember(ownerId, state.authId);
+      if(state.dataOwnerId===ownerId) await switchToOwnData();
+      loadHouseholdSection();
+    };
+  });
 }
 
 function renderCategoryManager(){
@@ -2788,6 +3172,7 @@ function exportXlsx(scope){
 
 /* ---------------------------- PDF MONATSBERICHT ------------------------------ */
 function generateMonthlyReportPdf(){
+  if(!isPro()){ toast(t('pdfReportProOnly')); return; }
   if(!window.jspdf || !window.jspdf.jsPDF){
     toast(state.lang==='en'
       ? 'PDF library could not be loaded (maybe blocked by a browser extension / Brave Shields).'

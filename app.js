@@ -137,7 +137,9 @@ const L = {
     badge_first_tx:"Erste Buchung", badge_fifty_tx:"50 Buchungen", badge_century_tx:"100 Buchungen",
     badge_goal_reached:"Sparziel erreicht", badge_streak3:"3-Monats-Streak", badge_streak6:"6-Monats-Streak",
     badge_multi_account:"3+ Konten", badge_budgeter:"Erstes Budget", badge_saver20:"20% Sparquote",
-    more:"Mehr"
+    more:"Mehr", vsLastMonth:"vs. Vormonat", vsLastYear:"vs. Vorjahresmonat", avgExpense:"Ø Ausgabe/Buchung",
+    yearBalance:"Jahresbilanz", expensesChart:"Ausgaben nach Kategorie", incomeChart:"Einnahmen nach Kategorie",
+    yearOverview:"Jahresübersicht", topExpenses:"Größte Ausgaben"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -202,7 +204,9 @@ const L = {
     badge_first_tx:"First booking", badge_fifty_tx:"50 bookings", badge_century_tx:"100 bookings",
     badge_goal_reached:"Goal reached", badge_streak3:"3-month streak", badge_streak6:"6-month streak",
     badge_multi_account:"3+ accounts", badge_budgeter:"First budget", badge_saver20:"20% savings rate",
-    more:"More"
+    more:"More", vsLastMonth:"vs. last month", vsLastYear:"vs. same month last year", avgExpense:"Avg. expense/booking",
+    yearBalance:"Year balance", expensesChart:"Expenses by category", incomeChart:"Income by category",
+    yearOverview:"Year overview", topExpenses:"Biggest expenses"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -267,7 +271,9 @@ const L = {
     badge_first_tx:"أول عملية", badge_fifty_tx:"50 عملية", badge_century_tx:"100 عملية",
     badge_goal_reached:"تحقيق هدف ادخار", badge_streak3:"سلسلة 3 أشهر", badge_streak6:"سلسلة 6 أشهر",
     badge_multi_account:"3+ حسابات", badge_budgeter:"أول ميزانية", badge_saver20:"معدل ادخار 20%",
-    more:"المزيد"
+    more:"المزيد", vsLastMonth:"مقابل الشهر الماضي", vsLastYear:"مقابل نفس الشهر العام الماضي", avgExpense:"متوسط المصروف/عملية",
+    yearBalance:"ميزانية السنة", expensesChart:"المصروفات حسب الفئة", incomeChart:"الدخل حسب الفئة",
+    yearOverview:"نظرة عامة على السنة", topExpenses:"أكبر المصروفات"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -1334,12 +1340,16 @@ function renderDashboard(c){
   const bilanz = ein-aus;
   const sparquote = ein>0 ? ((ein-aus)/ein*100) : 0;
 
-  // category breakdown for donut (expenses) — Überweisungen zählen nicht als Ausgabe
-  const katMap = {};
-  buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMap[b.kategorie] = (katMap[b.kategorie]||0)+b.betrag);
-  const katEntries = Object.entries(katMap).sort((a,b)=>b[1]-a[1]);
+  // Kategorie-Aufschlüsselung für Ausgaben- UND Einnahmen-Diagramm — Überweisungen zählen nicht mit
+  const katMapAus = {};
+  buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMapAus[b.kategorie] = (katMapAus[b.kategorie]||0)+b.betrag);
+  const katEntriesAus = Object.entries(katMapAus).sort((a,b)=>b[1]-a[1]);
 
-  // 6-month trend
+  const katMapEin = {};
+  buf.filter(b=>b.istEinnahme && !b.istUeberweisung).forEach(b=> katMapEin[b.kategorie] = (katMapEin[b.kategorie]||0)+b.betrag);
+  const katEntriesEin = Object.entries(katMapEin).sort((a,b)=>b[1]-a[1]);
+
+  // 6-Monats-Trend
   const trend = [];
   for(let i=5;i>=0;i--){
     let m = state.aktiverMonat - i, y = state.aktivesJahr;
@@ -1348,37 +1358,114 @@ function renderDashboard(c){
     trend.push({m,y, ein:summeEin(list), aus:summeAus(list)});
   }
 
+  // Jahresübersicht: alle 12 Monate des aktiven Jahres
+  const jahresDaten = [];
+  for(let m=1;m<=12;m++){
+    const list = state.data.buchungen.filter(b=>{ const d=new Date(b.datum); return d.getFullYear()===state.aktivesJahr && (d.getMonth()+1)===m; });
+    jahresDaten.push({ m, ein:summeEin(list), aus:summeAus(list) });
+  }
+  const jahrEin = jahresDaten.reduce((s,x)=>s+x.ein,0);
+  const jahrAus = jahresDaten.reduce((s,x)=>s+x.aus,0);
+
+  // Vergleich mit Vormonat & Vorjahr (gleicher Monat)
+  let vormM = state.aktiverMonat-1, vormJ = state.aktivesJahr;
+  if(vormM<1){ vormM=12; vormJ--; }
+  const vormBuf = state.data.buchungen.filter(b=>{ const d=new Date(b.datum); return d.getFullYear()===vormJ && (d.getMonth()+1)===vormM; });
+  const vormAus = summeAus(vormBuf), vormEin = summeEin(vormBuf);
+
+  const vorjBuf = state.data.buchungen.filter(b=>{ const d=new Date(b.datum); return d.getFullYear()===state.aktivesJahr-1 && (d.getMonth()+1)===state.aktiverMonat; });
+  const vorjAus = summeAus(vorjBuf), vorjEin = summeEin(vorjBuf);
+
+  function delta(current, previous){
+    if(previous===0) return current===0 ? null : { pct:null, up: current>0 };
+    const pct = (current-previous)/previous*100;
+    return { pct, up: pct>0 };
+  }
+  const ausVsVormonat = delta(aus, vormAus);
+  const ausVsVorjahr = delta(aus, vorjAus);
+
+  // Größte Ausgaben (Einzelbuchungen) & Durchschnittliche Ausgabe pro Buchung
+  const ausgabenListe = buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).sort((a,b)=>b.betrag-a.betrag);
+  const topAusgaben = ausgabenListe.slice(0,5);
+  const avgAusgabe = ausgabenListe.length ? aus/ausgabenListe.length : 0;
+
   const notifs = buildNotifications();
   const streak = computeStreak();
+
+  function deltaBadge(d){
+    if(!d) return '';
+    if(d.pct==null) return `<span style="font-size:11px; color:var(--muted);">${state.lang==='en'?'no data last time':'keine Vergleichsdaten'}</span>`;
+    const col = d.up ? 'var(--red)' : 'var(--green)'; // bei Ausgaben ist "mehr" schlecht
+    const arrow = d.up ? '↑' : '↓';
+    return `<span style="font-size:11px; font-weight:700; color:${col};">${arrow} ${Math.abs(d.pct).toFixed(0)}%</span>`;
+  }
 
   c.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
       ${streak>0 ? `<div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--amber);">🔥 ${streak} ${streak===1?t('month'):t('months')} ${t('savingsStreak')}</div>` : `<div></div>`}
       <button class="btn btn-ghost btn-sm" id="btn-monthly-report">📄 ${t('downloadReport')}</button>
     </div>
-    <div class="grid grid-4" style="margin-bottom:22px;">
+    <div class="grid grid-4" style="margin-bottom:14px;">
       ${kpiCard(t('totalIncome'), fmt(ein), 'pos', '📈')}
       ${kpiCard(t('totalExpenses'), fmt(aus), 'neg', '📉')}
       ${kpiCard(t('balance'), fmt(bilanz), bilanz>=0?'pos':'neg', '⚖️')}
       ${kpiCard(t('savingsRate'), sparquote.toFixed(1)+'%', sparquote>=20?'pos':sparquote>=0?'warn':'neg', '🎯')}
     </div>
 
-    <div class="grid grid-2" style="align-items:start;">
-      <div class="card">
-        <h3>${state.lang==='en'?'Expenses by category':'Ausgaben nach Kategorie'}</h3>
-        ${katEntries.length ? donutChart(katEntries) : `<div class="empty-state"><div class="big">📭</div>${t('noData')}</div>`}
+    <div class="grid grid-4" style="margin-bottom:22px;">
+      <div class="card kpi-card">
+        <div class="lbl">📆 ${t('vsLastMonth')}</div>
+        <div style="display:flex; align-items:baseline; gap:8px; margin-top:2px;">
+          <div class="val" style="font-size:16px;">${fmt(aus)}</div>${deltaBadge(ausVsVormonat)}
+        </div>
+        <div class="desc" style="margin-top:2px;">${monateFor(state.lang)[vormM-1]}: ${fmt(vormAus)}</div>
       </div>
+      <div class="card kpi-card">
+        <div class="lbl">📅 ${t('vsLastYear')}</div>
+        <div style="display:flex; align-items:baseline; gap:8px; margin-top:2px;">
+          <div class="val" style="font-size:16px;">${fmt(aus)}</div>${deltaBadge(ausVsVorjahr)}
+        </div>
+        <div class="desc" style="margin-top:2px;">${monateFor(state.lang)[state.aktiverMonat-1]} ${state.aktivesJahr-1}: ${fmt(vorjAus)}</div>
+      </div>
+      ${kpiCard(t('avgExpense'), fmt(avgAusgabe), 'neg', '🧮')}
+      ${kpiCard(t('yearBalance')+' '+state.aktivesJahr, fmt(jahrEin-jahrAus), (jahrEin-jahrAus)>=0?'pos':'neg', '🗓')}
+    </div>
+
+    <div class="grid grid-2" style="align-items:start; margin-bottom:22px;">
+      <div class="card">
+        <h3>${t('expensesChart')}</h3>
+        ${katEntriesAus.length ? donutChart(katEntriesAus) : `<div class="empty-state"><div class="big">📭</div>${t('noData')}</div>`}
+      </div>
+      <div class="card">
+        <h3>${t('incomeChart')}</h3>
+        ${katEntriesEin.length ? donutChart(katEntriesEin) : `<div class="empty-state"><div class="big">📭</div>${t('noData')}</div>`}
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="align-items:start; margin-bottom:22px;">
       <div class="card">
         <h3>${state.lang==='en'?'6-month trend':'6-Monats-Trend'}</h3>
         ${trendChart(trend)}
       </div>
+      <div class="card">
+        <h3>${t('yearOverview')} ${state.aktivesJahr}</h3>
+        ${yearChart(jahresDaten)}
+      </div>
     </div>
 
-    <div class="section-title">${state.lang==='en'?'Alerts':'Hinweise'}</div>
-    <div>
-      ${notifs.map(n=>`<div class="notif" style="background:var(--${n.level==='RED'?'red':n.level==='AMBER'?'amber':'green'}-dim); color:var(--${n.level==='RED'?'red':n.level==='AMBER'?'amber':'green'});">
-        <span style="font-size:18px;">${n.icon}</span><span>${escapeHtml(n.text)}</span>
-      </div>`).join('')}
+    <div class="grid grid-2" style="align-items:start; margin-bottom:22px;">
+      <div class="card">
+        <h3>🔝 ${t('topExpenses')}</h3>
+        ${topAusgaben.length ? txList(topAusgaben) : `<div class="empty-state"><div class="big">📭</div>${t('noData')}</div>`}
+      </div>
+      <div>
+        <div class="section-title" style="margin-top:0;">${state.lang==='en'?'Alerts':'Hinweise'}</div>
+        <div>
+          ${notifs.map(n=>`<div class="notif" style="background:var(--${n.level==='RED'?'red':n.level==='AMBER'?'amber':'green'}-dim); color:var(--${n.level==='RED'?'red':n.level==='AMBER'?'amber':'green'});">
+            <span style="font-size:18px;">${n.icon}</span><span>${escapeHtml(n.text)}</span>
+          </div>`).join('')}
+        </div>
+      </div>
     </div>
 
     <div class="section-title">${t('transactions')}</div>
@@ -1426,6 +1513,33 @@ function donutChart(entries){
       <text x="70" y="82" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)" font-family="var(--font-num)">${fmt(total)}</text>
     </svg>
     <div style="flex:1; min-width:140px;">${legend}</div>
+  </div>`;
+}
+
+// Jahresübersicht: 12 gruppierte Balken (Einnahmen/Ausgaben) für das aktive Jahr
+function yearChart(jahresDaten){
+  const W=280,H=140,PAD=8,BOTTOM=20;
+  const maxV = Math.max(1, ...jahresDaten.map(x=>Math.max(x.ein,x.aus)));
+  const groupW = (W-2*PAD)/12;
+  const barW = Math.max(2, groupW*0.32);
+  const labels = jahresDaten.map(x=>monateFor(state.lang)[x.m-1].slice(0,1));
+  const bars = jahresDaten.map((x,i)=>{
+    const gx = PAD + i*groupW;
+    const einH = (x.ein/maxV)*(H-BOTTOM-PAD);
+    const ausH = (x.aus/maxV)*(H-BOTTOM-PAD);
+    const baseY = H-BOTTOM;
+    return `
+      <rect x="${(gx).toFixed(1)}" y="${(baseY-einH).toFixed(1)}" width="${barW.toFixed(1)}" height="${einH.toFixed(1)}" rx="1.5" fill="var(--green)"/>
+      <rect x="${(gx+barW+1.5).toFixed(1)}" y="${(baseY-ausH).toFixed(1)}" width="${barW.toFixed(1)}" height="${ausH.toFixed(1)}" rx="1.5" fill="var(--red)"/>
+    `;
+  }).join('');
+  return `<svg width="100%" height="${H+6}" viewBox="0 0 ${W} ${H+6}" preserveAspectRatio="xMidYMid meet">
+    ${bars}
+    ${labels.map((l,i)=>`<text x="${(PAD+i*groupW+groupW/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8.5" fill="var(--muted)">${l}</text>`).join('')}
+  </svg>
+  <div style="display:flex; gap:16px; margin-top:2px; font-size:11.5px;">
+    <span style="color:var(--green);">● ${t('income')}</span>
+    <span style="color:var(--red);">● ${t('expenses')}</span>
   </div>`;
 }
 

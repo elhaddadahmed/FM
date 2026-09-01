@@ -139,7 +139,14 @@ const L = {
     badge_multi_account:"3+ Konten", badge_budgeter:"Erstes Budget", badge_saver20:"20% Sparquote",
     more:"Mehr", vsLastMonth:"vs. Vormonat", vsLastYear:"vs. Vorjahresmonat", avgExpense:"Ø Ausgabe/Buchung",
     yearBalance:"Jahresbilanz", expensesChart:"Ausgaben nach Kategorie", incomeChart:"Einnahmen nach Kategorie",
-    yearOverview:"Jahresübersicht", topExpenses:"Größte Ausgaben"
+    yearOverview:"Jahresübersicht", topExpenses:"Größte Ausgaben",
+    currency:"Währung", changePassword:"Passwort ändern", tapAvatarToChange:"Bild antippen zum Ändern",
+    profileSaved:"Profil gespeichert.", profileSaveError:"Profil konnte nicht gespeichert werden.",
+    avatarTooLarge:"Bild ist zu groß (max. 3 MB).", avatarUploadError:"Profilbild konnte nicht hochgeladen werden.",
+    avatarUpdated:"Profilbild aktualisiert.", attachReceipt:"Beleg", close:"Schließen", loading:"Lädt…",
+    uploadReceipt:"Beleg hochladen", receiptLoadError:"Beleg konnte nicht geladen werden.", openReceipt:"Beleg öffnen",
+    removeReceipt:"Beleg entfernen", receiptTooLarge:"Datei ist zu groß (max. 8 MB).", uploading:"Wird hochgeladen…",
+    receiptUploadError:"Beleg konnte nicht hochgeladen werden.", receiptAttached:"Beleg angehängt."
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -206,7 +213,14 @@ const L = {
     badge_multi_account:"3+ accounts", badge_budgeter:"First budget", badge_saver20:"20% savings rate",
     more:"More", vsLastMonth:"vs. last month", vsLastYear:"vs. same month last year", avgExpense:"Avg. expense/booking",
     yearBalance:"Year balance", expensesChart:"Expenses by category", incomeChart:"Income by category",
-    yearOverview:"Year overview", topExpenses:"Biggest expenses"
+    yearOverview:"Year overview", topExpenses:"Biggest expenses",
+    currency:"Currency", changePassword:"Change password", tapAvatarToChange:"Tap image to change",
+    profileSaved:"Profile saved.", profileSaveError:"Profile could not be saved.",
+    avatarTooLarge:"Image is too large (max. 3 MB).", avatarUploadError:"Profile picture could not be uploaded.",
+    avatarUpdated:"Profile picture updated.", attachReceipt:"Receipt", close:"Close", loading:"Loading…",
+    uploadReceipt:"Upload receipt", receiptLoadError:"Receipt could not be loaded.", openReceipt:"Open receipt",
+    removeReceipt:"Remove receipt", receiptTooLarge:"File is too large (max. 8 MB).", uploading:"Uploading…",
+    receiptUploadError:"Receipt could not be uploaded.", receiptAttached:"Receipt attached."
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -273,7 +287,14 @@ const L = {
     badge_multi_account:"3+ حسابات", badge_budgeter:"أول ميزانية", badge_saver20:"معدل ادخار 20%",
     more:"المزيد", vsLastMonth:"مقابل الشهر الماضي", vsLastYear:"مقابل نفس الشهر العام الماضي", avgExpense:"متوسط المصروف/عملية",
     yearBalance:"ميزانية السنة", expensesChart:"المصروفات حسب الفئة", incomeChart:"الدخل حسب الفئة",
-    yearOverview:"نظرة عامة على السنة", topExpenses:"أكبر المصروفات"
+    yearOverview:"نظرة عامة على السنة", topExpenses:"أكبر المصروفات",
+    currency:"العملة", changePassword:"تغيير كلمة المرور", tapAvatarToChange:"اضغط على الصورة للتغيير",
+    profileSaved:"تم حفظ الملف الشخصي.", profileSaveError:"تعذّر حفظ الملف الشخصي.",
+    avatarTooLarge:"الصورة كبيرة جدًا (الحد الأقصى 3 ميغابايت).", avatarUploadError:"تعذّر رفع صورة الملف الشخصي.",
+    avatarUpdated:"تم تحديث صورة الملف الشخصي.", attachReceipt:"إيصال", close:"إغلاق", loading:"جارٍ التحميل…",
+    uploadReceipt:"رفع إيصال", receiptLoadError:"تعذّر تحميل الإيصال.", openReceipt:"فتح الإيصال",
+    removeReceipt:"إزالة الإيصال", receiptTooLarge:"الملف كبير جدًا (الحد الأقصى 8 ميغابايت).", uploading:"جارٍ الرفع…",
+    receiptUploadError:"تعذّر رفع الإيصال.", receiptAttached:"تم إرفاق الإيصال."
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -354,6 +375,7 @@ const Store = {
         kategorien: data.kategorien || { ausgaben:[], einnahmen:[] },
         budgets: data.budgets || { gesamt:null, kategorien:[] },
         monatsziel: data.monatsziel ?? null,
+        challenges: data.challenges || [],
         settings: data.settings || { theme:'dark', lang:'de' }
       });
     }catch(e){ console.error('getUserData Fehler:', e); return null; }
@@ -363,7 +385,7 @@ const Store = {
       id: userId, display_name: displayName,
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, settings: data.settings
+      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, challenges: data.challenges, settings: data.settings
     });
     if(error) console.error('createUserData Fehler:', error);
     return !error;
@@ -372,7 +394,7 @@ const Store = {
     const { error } = await sb.from('user_data').update({
       buchungen: data.buchungen, sparziele: data.sparziele,
       wiederkehrend: data.wiederkehrend, konten: data.konten,
-      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, settings: data.settings,
+      kategorien: data.kategorien, budgets: data.budgets, monatsziel: data.monatsziel, challenges: data.challenges, settings: data.settings,
       updated_at: new Date().toISOString()
     }).eq('id', userId);
     if(error) console.error('saveUserData Fehler:', error);
@@ -409,6 +431,7 @@ function emptyUserData(){
     kategorien: { ausgaben: [], einnahmen: [] }, // eigene Kategorien: {key, icon, eltern}
     budgets: { gesamt: null, kategorien: [] }, // gesamt: Zahl|null; kategorien: [{kategorie, betrag}]
     monatsziel: null, // Zahl|null — Sparziel pro Monat (wiederkehrend, nicht auf einen Monat fixiert)
+    challenges: [], // {id, typ:'no_spend'|'save_amount'|'spend_limit', kategorie?, betrag?, start(ISO), ende(ISO)}
     settings: { theme:"dark", lang:"de" }
   };
 }
@@ -436,14 +459,18 @@ function migrateData(data){
   if(!data.budgets) data.budgets = { gesamt:null, kategorien:[] };
   if(!data.budgets.kategorien) data.budgets.kategorien = [];
   if(data.monatsziel===undefined) data.monatsziel = null;
+  if(!data.challenges) data.challenges = [];
   data.__migrated = changed;
   return data;
 }
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+const CURRENCIES = ['EUR','USD','GBP','CHF'];
 function fmt(n){
   const v = Number(n)||0;
-  return v.toLocaleString(state.lang==="en"?"en-US":"de-DE",{style:"currency",currency:"EUR"});
+  const cur = state.currency || 'EUR';
+  const locale = state.lang==="en"?"en-US":state.lang==="ar"?"ar-SA":"de-DE";
+  return v.toLocaleString(locale,{style:"currency",currency:cur});
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
@@ -461,6 +488,7 @@ const state = {
   data: emptyUserData(),
   plan: 'free', // 'free' | 'pro' — kommt aus der subscriptions-Tabelle, nicht clientseitig änderbar
   autoCategorize: true,
+  currency: 'EUR',
   txFilter: { search:'', kategorie:'', kontoId:'' },
   loginError: '',
   regError: ''
@@ -476,8 +504,8 @@ function applyTheme(){
 
 async function persist(){
   if(!state.authId) return;
-  state.data.settings = { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize };
-  const ok = await Store.saveUserData(state.authId, state.data);
+  state.data.settings = { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize, currency: state.currency };
+  const ok = await Store.saveUserData(state.dataOwnerId||state.authId, state.data);
   window.__syncOk = ok;
   injectStorageWarning();
 }
@@ -788,13 +816,16 @@ async function enterApp(authUser, username){
   state.authId = authUser.id;
   state.authUsername = username || (authUser.user_metadata && authUser.user_metadata.username) || authUser.email.split('@')[0];
   state.displayName = (authUser.user_metadata && authUser.user_metadata.display_name) || state.authUsername;
-  let data = await Store.getUserData(authUser.id);
+  state.avatarUrl = (authUser.user_metadata && authUser.user_metadata.avatar_url) || null;
+  state.dataOwnerId = authUser.id; // kann später auf einen Haushalts-Besitzer umgeschaltet werden
+  let data = await Store.getUserData(state.dataOwnerId);
   if(!data) data = migrateData(emptyUserData());
   if(!data.settings) data.settings = {theme:'dark', lang:'de'};
   state.data = data;
   state.theme = data.settings.theme || 'dark';
   state.lang = data.settings.lang || 'de';
   state.autoCategorize = data.settings.autoCategorize !== false; // Standard: an
+  state.currency = data.settings.currency || 'EUR';
   state.plan = await Store.getPlan(authUser.id);
   state.screen = 'app';
   state.tab = 'dashboard';
@@ -808,8 +839,8 @@ async function enterApp(authUser, username){
 
 async function doLogout(){
   await sb.auth.signOut();
-  state.screen='login'; state.authId=null; state.authUsername=null; state.data=emptyUserData();
-  state.plan='free';
+  state.screen='login'; state.authId=null; state.dataOwnerId=null; state.authUsername=null; state.data=emptyUserData();
+  state.plan='free'; state.currency='EUR';
   state.theme='dark'; applyTheme();
   render();
 }
@@ -824,7 +855,7 @@ function renderApp(){
         <div class="sb-nav" id="sb-nav"></div>
         <div class="sb-foot">
           <div class="sb-user">
-            <div class="sb-avatar">${(state.displayName||'?').slice(0,1).toUpperCase()}</div>
+            <div class="sb-avatar" style="${state.avatarUrl?`background-image:url('${state.avatarUrl}'); background-size:cover; background-position:center;`:''}">${state.avatarUrl?'':(state.displayName||'?').slice(0,1).toUpperCase()}</div>
             <div style="overflow:hidden">
               <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(state.displayName)}</div>
               <div style="font-size:11px; color:var(--muted)">@${escapeHtml(state.authUsername)}</div>
@@ -1474,6 +1505,7 @@ function renderDashboard(c){
     </div>
   `;
   document.getElementById('btn-monthly-report').onclick = generateMonthlyReportPdf;
+  wireTxList(c);
 }
 
 function kpiCard(label, val, cls, icon){
@@ -1579,8 +1611,81 @@ function txList(list){
         <div class="meta">${catLabel(b.kategorie)} · ${b.datum}${b.notiz? ' · '+escapeHtml(b.notiz):''}</div>
       </div>
       <div class="tx-amt ${b.istEinnahme?'pos':'neg'}">${b.istEinnahme?'+':'-'}${fmt(b.betrag)}</div>
+      <button class="icon-btn" data-receipt="${b.id}" title="${t('attachReceipt')}" style="${b.belegPath?'color:var(--accent); border-color:var(--accent);':''}">${b.belegPath?'📎':'📄'}</button>
       <button class="tx-del" data-id="${b.id}" title="${t('delete')}">${ICO.trash}</button>
     </div>`).join('')}</div>`;
+}
+
+/* ---------------------------- BELEGE / DOKUMENTE ---------------------------- */
+function openReceiptModal(buchungId){
+  const b = state.data.buchungen.find(x=>x.id===buchungId);
+  if(!b) return;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('attachReceipt')}</h3>
+      <div class="desc" style="margin-bottom:14px;">${escapeHtml(b.beschreibung)} · ${fmt(b.betrag)}</div>
+      <div id="receipt-body">${b.belegPath ? `<div class="desc">${t('loading')}</div>` : ''}</div>
+      ${!b.belegPath ? `
+        <label class="btn btn-ghost" for="receipt-file" style="cursor:pointer; width:100%; justify-content:center;">📎 ${t('uploadReceipt')}</label>
+        <input type="file" id="receipt-file" accept="image/*,application/pdf" style="display:none;"/>
+      ` : ''}
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="receipt-close">${t('close')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#receipt-close').onclick = ()=>bg.remove();
+
+  const body = bg.querySelector('#receipt-body');
+
+  async function showExisting(){
+    try{
+      const { data, error } = await sb.storage.from('receipts').createSignedUrl(b.belegPath, 300);
+      if(error || !data){ body.innerHTML = `<div class="desc" style="color:var(--red);">${t('receiptLoadError')}</div>`; return; }
+      const isImg = /\.(png|jpe?g|webp|gif)$/i.test(b.belegPath);
+      body.innerHTML = `
+        ${isImg ? `<img src="${data.signedUrl}" style="width:100%; border-radius:12px; margin-bottom:12px;"/>` : ''}
+        <a href="${data.signedUrl}" target="_blank" rel="noopener" class="btn btn-ghost" style="width:100%; justify-content:center; margin-bottom:8px;">↗ ${t('openReceipt')}</a>
+        <button class="btn btn-danger" id="receipt-remove" style="width:100%; justify-content:center;">${t('removeReceipt')}</button>
+      `;
+      bg.querySelector('#receipt-remove').onclick = async ()=>{
+        try{ await sb.storage.from('receipts').remove([b.belegPath]); }catch(e){ console.error('Beleg löschen Fehler:', e); }
+        delete b.belegPath;
+        persist(); bg.remove(); render();
+      };
+    }catch(e){
+      console.error('Beleg laden Fehler:', e);
+      body.innerHTML = `<div class="desc" style="color:var(--red);">${isNetworkError(e) ? t('brokenConn') : t('receiptLoadError')}</div>`;
+    }
+  }
+  if(b.belegPath) showExisting();
+
+  const fileInput = bg.querySelector('#receipt-file');
+  if(fileInput){
+    fileInput.addEventListener('change', async ()=>{
+      const file = fileInput.files[0];
+      if(!file) return;
+      if(file.size > 8*1024*1024){ toast(t('receiptTooLarge')); return; }
+      body.innerHTML = `<div class="desc">${t('uploading')}</div>`;
+      try{
+        const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+        const path = `${state.dataOwnerId||state.authId}/${buchungId}-${uid()}.${ext}`;
+        const { error } = await sb.storage.from('receipts').upload(path, file);
+        if(error){ console.error('Beleg-Upload Fehler:', error); body.innerHTML = `<div class="desc" style="color:var(--red);">${t('receiptUploadError')}</div>`; return; }
+        b.belegPath = path;
+        persist();
+        toast(t('receiptAttached'));
+        bg.remove();
+        render();
+      }catch(e){
+        console.error('Beleg-Upload Fehler:', e);
+        body.innerHTML = `<div class="desc" style="color:var(--red);">${isNetworkError(e) ? t('brokenConn') : t('receiptUploadError')}</div>`;
+      }
+    });
+  }
 }
 
 /* ---------------------------- INCOME / EXPENSES TAB ------------------------ */
@@ -1617,11 +1722,20 @@ function renderTxTab(c, isIncome){
   document.getElementById('tf-search').oninput = e=>{ state.txFilter.search = e.target.value; renderTxTab(c, isIncome); };
   document.getElementById('tf-kat').onchange = e=>{ state.txFilter.kategorie = e.target.value; renderTxTab(c, isIncome); };
   document.getElementById('tf-konto').onchange = e=>{ state.txFilter.kontoId = e.target.value; renderTxTab(c, isIncome); };
+  wireTxList(c);
+}
+
+// Gemeinsame Verkabelung für alle Stellen, die txList() einsetzen (Dashboard,
+// Einnahmen/Ausgaben-Tab, "Größte Ausgaben" …) — Löschen- und Beleg-Button.
+function wireTxList(c){
   c.querySelectorAll('.tx-del').forEach(btn=>{
     btn.onclick = ()=>{
       state.data.buchungen = state.data.buchungen.filter(b=>b.id!==btn.dataset.id);
       persist(); render();
     };
+  });
+  c.querySelectorAll('[data-receipt]').forEach(btn=>{
+    btn.onclick = ()=> openReceiptModal(btn.dataset.receipt);
   });
 }
 
@@ -2362,6 +2476,15 @@ async function runDeepAiAnalysis(anomalies){
 /* ---------------------------- SETTINGS -------------------------------------- */
 function renderSettings(c){
   c.innerHTML = `
+    <div class="card" style="margin-bottom:16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div class="sb-avatar" id="profile-avatar" style="width:56px; height:56px; font-size:20px; cursor:pointer; ${state.avatarUrl?`background-image:url('${state.avatarUrl}'); background-size:cover; background-position:center;`:''}">${state.avatarUrl?'':(state.displayName||'?').slice(0,1).toUpperCase()}</div>
+      <input type="file" id="avatar-file" accept="image/*" style="display:none;"/>
+      <div style="flex:1; min-width:180px;">
+        <input id="profile-name" value="${escapeHtml(state.displayName)}" style="width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 12px; font-size:14px; font-weight:600;"/>
+        <div class="desc" style="margin-top:6px;">@${escapeHtml(state.authUsername)} · ${t('tapAvatarToChange')}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-save-profile">${t('save')}</button>
+    </div>
     <div class="card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
         <div class="lbl" style="display:flex; align-items:center; gap:8px;">
@@ -2389,6 +2512,16 @@ function renderSettings(c){
         </div>
       </div>
       <div class="settings-row">
+        <div><div class="lbl">${t('changePassword')}</div><div class="desc">${state.lang==='en'?'Set a new password':state.lang==='ar'?'تعيين كلمة مرور جديدة':'Neues Passwort für dein Konto setzen'}</div></div>
+        <button class="btn btn-ghost btn-sm" id="btn-change-pw">${t('changePassword')}</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">${t('currency')}</div><div class="desc">${state.lang==='en'?'Currency used for all amounts':state.lang==='ar'?'العملة المستخدمة لجميع المبالغ':'Währung für alle Beträge in der App'}</div></div>
+        <select id="currency-sel" style="background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:8px 10px; font-size:12.5px;">
+          ${CURRENCIES.map(c=>`<option value="${c}" ${state.currency===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="settings-row">
         <div><div class="lbl">${t('autoCategorize')}</div><div class="desc">${state.lang==='en'?'Suggest a category automatically based on the description (e.g. "Rewe" → Groceries)':state.lang==='ar'?'اقتراح فئة تلقائيًا بناءً على الوصف':'Schlägt beim Erfassen automatisch eine Kategorie anhand der Beschreibung vor (z.B. "Rewe" → Lebensmittel)'}</div></div>
         <div class="seg" id="autocat-seg" style="width:110px;">
           <button data-v="on" class="${state.autoCategorize?'active':''}">${state.lang==='en'?'On':'An'}</button>
@@ -2396,13 +2529,14 @@ function renderSettings(c){
         </div>
       </div>
       <div class="settings-row">
-        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download bookings as CSV':state.lang==='ar'?'تنزيل العمليات كملف CSV':'Buchungen als CSV herunterladen'}</div></div>
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div><div class="lbl">${t('exportCsv')}</div><div class="desc">${state.lang==='en'?'Download bookings as CSV or Excel':state.lang==='ar'?'تنزيل العمليات كملف CSV أو Excel':'Buchungen als CSV oder Excel herunterladen'}</div></div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <select id="export-scope" style="background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:8px 10px; font-size:12.5px;">
             <option value="all">${t('allTime')}</option>
             <option value="month">${t('thisMonthScope')}</option>
           </select>
           <button class="btn btn-ghost btn-sm" id="btn-export">⬇ CSV</button>
+          <button class="btn btn-ghost btn-sm" id="btn-export-xlsx">⬇ Excel</button>
         </div>
       </div>
       <div class="settings-row">
@@ -2436,7 +2570,13 @@ function renderSettings(c){
   document.querySelectorAll('#autocat-seg button').forEach(b=>{
     b.onclick = ()=>{ state.autoCategorize = b.dataset.v==='on'; persist(); render(); };
   });
+  document.getElementById('currency-sel').onchange = e=>{ state.currency = e.target.value; persist(); render(); };
+  document.getElementById('btn-change-pw').onclick = openChangePasswordModal;
+  document.getElementById('profile-avatar').onclick = ()=> document.getElementById('avatar-file').click();
+  document.getElementById('avatar-file').addEventListener('change', uploadAvatar);
+  document.getElementById('btn-save-profile').onclick = saveProfileName;
   document.getElementById('btn-export').onclick = ()=> exportCsv(document.getElementById('export-scope').value);
+  document.getElementById('btn-export-xlsx').onclick = ()=> exportXlsx(document.getElementById('export-scope').value);
   document.getElementById('btn-report').onclick = generateMonthlyReportPdf;
   document.getElementById('file-import').addEventListener('change', importCsv);
   const upBtn = document.getElementById('btn-upgrade');
@@ -2450,11 +2590,87 @@ function renderSettings(c){
     const fresh = emptyUserData();
     await sb.from('user_data').update({
       buchungen: [], sparziele: [], wiederkehrend: [], konten: fresh.konten,
-      kategorien: fresh.kategorien, budgets: fresh.budgets, monatsziel: null, settings: {theme:'dark', lang:'de'},
+      kategorien: fresh.kategorien, budgets: fresh.budgets, monatsziel: null, challenges: [], settings: {theme:'dark', lang:'de'},
       updated_at: new Date().toISOString()
     }).eq('id', state.authId);
     doLogout();
   };
+}
+
+async function saveProfileName(){
+  const name = document.getElementById('profile-name').value.trim();
+  if(!name){ toast(t('fillAllFields')); return; }
+  state.displayName = name;
+  try{
+    await sb.auth.updateUser({ data: { display_name: name } });
+    await sb.from('user_data').update({ display_name: name }).eq('id', state.dataOwnerId||state.authId);
+    toast(t('profileSaved'));
+    render();
+  }catch(e){
+    console.error('Profil speichern Fehler:', e);
+    toast(isNetworkError(e) ? t('brokenConn') : t('profileSaveError'));
+  }
+}
+
+async function uploadAvatar(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  if(file.size > 3*1024*1024){ toast(t('avatarTooLarge')); ev.target.value=''; return; }
+  try{
+    const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+    const path = `${state.authId}/avatar.${ext}`;
+    const { error: upErr } = await sb.storage.from('avatars').upload(path, file, { upsert:true, cacheControl:'3600' });
+    if(upErr){ console.error('Avatar-Upload Fehler:', upErr); toast(t('avatarUploadError')); return; }
+    const { data } = sb.storage.from('avatars').getPublicUrl(path);
+    // Cache-Buster anhängen, damit das neue Bild sofort sichtbar wird statt
+    // einer evtl. vom Browser gecachten alten Version unter derselben URL.
+    const url = data.publicUrl + '?t=' + Date.now();
+    state.avatarUrl = url;
+    await sb.auth.updateUser({ data: { avatar_url: url } });
+    toast(t('avatarUpdated'));
+    render();
+  }catch(e){
+    console.error('Avatar-Upload Fehler:', e);
+    toast(isNetworkError(e) ? t('brokenConn') : t('avatarUploadError'));
+  }finally{
+    ev.target.value = '';
+  }
+}
+
+function openChangePasswordModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('changePassword')}</h3>
+      <div class="err-msg" id="pw-err"></div>
+      <div class="field"><label>${t('newPassword')}</label><input id="pw-new" type="password" autocomplete="new-password"/></div>
+      <div class="field"><label>${state.lang==='en'?'Confirm password':state.lang==='ar'?'تأكيد كلمة المرور':'Passwort bestätigen'}</label><input id="pw-confirm" type="password" autocomplete="new-password"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="pw-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="pw-save">${t('save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#pw-cancel').onclick = ()=>bg.remove();
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#pw-save').onclick = async ()=>{
+    const pass = bg.querySelector('#pw-new').value;
+    const confirm = bg.querySelector('#pw-confirm').value;
+    const errEl = bg.querySelector('#pw-err');
+    if(!pass || pass.length<6){ errEl.textContent = state.lang==='en'?'Password must be at least 6 characters.':'Passwort muss mind. 6 Zeichen haben.'; errEl.classList.add('show'); return; }
+    if(pass!==confirm){ errEl.textContent = state.lang==='en'?'Passwords do not match.':'Passwörter stimmen nicht überein.'; errEl.classList.add('show'); return; }
+    try{
+      const { error } = await sb.auth.updateUser({ password: pass });
+      if(error){ errEl.textContent = error.message; errEl.classList.add('show'); return; }
+      bg.remove();
+      toast(t('passwordUpdated'));
+    }catch(e){
+      errEl.textContent = isNetworkError(e) ? t('brokenConn') : (e.message||String(e));
+      errEl.classList.add('show');
+    }
+  };
+  bg.querySelector('#pw-new').focus();
 }
 
 function renderCategoryManager(){
@@ -2542,6 +2758,32 @@ function exportCsv(scope){
     ? `finanzmanager_${state.aktivesJahr}-${String(state.aktiverMonat).padStart(2,'0')}.csv`
     : 'finanzmanager_export.csv';
   a.click();
+}
+
+function exportXlsx(scope){
+  if(!window.XLSX){
+    toast(state.lang==='en'
+      ? 'Excel library could not be loaded (maybe blocked by a browser extension / Brave Shields).'
+      : 'Excel-Bibliothek konnte nicht geladen werden (evtl. durch Browser-Erweiterung / Brave Shields blockiert).');
+    return;
+  }
+  const quelle = scope==='month' ? gefilterteBuchungen() : state.data.buchungen;
+  const rows = quelle.map(b=>({
+    [t('date')]: b.datum,
+    [t('description')]: b.beschreibung,
+    [t('amount')]: b.betrag,
+    [t('category')]: catLabel(b.kategorie),
+    [t('note')]: b.notiz||'',
+    [state.lang==='en'?'Income':'Einnahme']: b.istEinnahme ? (state.lang==='en'?'Yes':'Ja') : (state.lang==='en'?'No':'Nein'),
+    [t('account')]: kontoName(b.kontoId),
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:28},{wch:10},{wch:16},{wch:24},{wch:9},{wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Buchungen');
+  XLSX.writeFile(wb, scope==='month'
+    ? `finanzmanager_${state.aktivesJahr}-${String(state.aktiverMonat).padStart(2,'0')}.xlsx`
+    : 'finanzmanager_export.xlsx');
 }
 
 /* ---------------------------- PDF MONATSBERICHT ------------------------------ */

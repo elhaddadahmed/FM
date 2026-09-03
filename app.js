@@ -675,306 +675,27 @@ function monatVor(delta){
   render();
 }
 
-/* ---------------------------- GEHALTSRECHNER 2026 ---------------------------- */
-/* ---------------------------- STEUERRECHNER 2026 ------------------------------- */
-
-function round2(v) {
-  return Math.round(v * 100) / 100;
+/* ---------------------------- STEUERRECHNER ------------------------------- */
+function round2(v){ return Math.round(v*100)/100; }
+function steuerBerechnen(brutto, klasse, kirche, kvZusatz){
+  const kv = round2(brutto*0.073);
+  const kv2 = round2(brutto*(kvZusatz/100)*0.5);
+  const rv = round2(brutto*0.093);
+  const av = round2(brutto*0.013);
+  const pv = round2(brutto*0.017);
+  const sv = kv+kv2+rv+av+pv;
+  const satz = [0,0.14,0.12,0.10,0.14,0.22,0.25];
+  const frei = [0,12888,12888,25776,12888,0,0];
+  const zvE = Math.max(0, brutto - sv - frei[klasse]/12);
+  const lohnsteuer = round2(zvE*satz[klasse]);
+  const soli = lohnsteuer>97.38 ? round2(lohnsteuer*0.055) : 0;
+  const kirchensteuer = kirche ? round2(lohnsteuer*0.09) : 0;
+  const netto = round2(brutto-kv-kv2-rv-av-pv-lohnsteuer-soli-kirchensteuer);
+  const abzuegeGesamt = round2(kv+kv2+rv+av+pv+lohnsteuer+soli+kirchensteuer);
+  const abzugsquote = brutto>0 ? (abzuegeGesamt/brutto*100) : 0;
+  return {brutto,kv,kv2,rv,av,pv,lohnsteuer,soli,kirchensteuer,netto,abzuegeGesamt,abzugsquote};
 }
 
-const SV_2026 = {
-  KV: 0.073,
-  RV: 0.093,
-  AV: 0.013,
-
-  // Pflegeversicherung außerhalb Sachsen
-  PV: 0.018,
-  PV_KINDERLOS_ZUSCHLAG: 0.006,
-
-  BBG_KV_PV: 5812.50,
-  BBG_RV_AV: 8450.00,
-
-  GRUNDFREIBETRAG: 12348
-};
-
-
-/* ---------------------------- EINKOMMENSTEUER 2026 ---------------------------- */
-
-function einkommensteuer2026(zvE) {
-
-  zvE = Math.floor(Math.max(0, zvE));
-
-  if (zvE <= 12348) {
-    return 0;
-  }
-
-  if (zvE <= 17799) {
-    const y = (zvE - 12348) / 10000;
-    return (914.51 * y + 1400) * y;
-  }
-
-  if (zvE <= 69878) {
-    const z = (zvE - 17799) / 10000;
-    return (173.10 * z + 2397) * z + 1034.87;
-  }
-
-  if (zvE <= 277825) {
-    return 0.42 * zvE - 11135.63;
-  }
-
-  return 0.45 * zvE - 19470.38;
-}
-
-
-/* ---------------------------- SOZIALVERSICHERUNG ---------------------------- */
-
-function sozialversicherung2026(
-  brutto,
-  kvZusatz = 3,
-  kinderlos = false,
-  sachsen = false
-) {
-
-  // Kranken- und Pflegeversicherung
-  const kvPvBrutto = Math.min(
-    brutto,
-    SV_2026.BBG_KV_PV
-  );
-
-  // Renten- und Arbeitslosenversicherung
-  const rvAvBrutto = Math.min(
-    brutto,
-    SV_2026.BBG_RV_AV
-  );
-
-
-  // Krankenversicherung
-  const kv = round2(
-    kvPvBrutto * SV_2026.KV
-  );
-
-
-  // Individueller Zusatzbeitrag
-  // Arbeitgeber und Arbeitnehmer teilen ihn sich 50/50
-  const kv2 = round2(
-    kvPvBrutto * (kvZusatz / 100) * 0.5
-  );
-
-
-  // Rentenversicherung
-  const rv = round2(
-    rvAvBrutto * SV_2026.RV
-  );
-
-
-  // Arbeitslosenversicherung
-  const av = round2(
-    rvAvBrutto * SV_2026.AV
-  );
-
-
-  // Pflegeversicherung
-  let pv;
-
-  if (sachsen) {
-
-    // Sachsen:
-    // normal: 2,3 %
-    // kinderlos: 2,9 %
-    pv = round2(
-      kvPvBrutto * (
-        0.023 +
-        (kinderlos ? 0.006 : 0)
-      )
-    );
-
-  } else {
-
-    // übrige Bundesländer:
-    // normal: 1,8 %
-    // kinderlos: 2,4 %
-    pv = round2(
-      kvPvBrutto * (
-        0.018 +
-        (kinderlos ? 0.006 : 0)
-      )
-    );
-  }
-
-
-  const gesamt = round2(
-    kv +
-    kv2 +
-    rv +
-    av +
-    pv
-  );
-
-
-  return {
-    kv,
-    kv2,
-    rv,
-    av,
-    pv,
-    gesamt
-  };
-}
-
-
-/* ---------------------------- HAUPTBERECHNUNG ---------------------------- */
-
-function steuerBerechnen(
-  brutto,
-  klasse = 1,
-  kirche = false,
-  kvZusatz = 3,
-  kinderlos = false,
-  sachsen = false
-) {
-
-  brutto = Number(brutto);
-
-  if (brutto < 0) {
-    throw new Error("Bruttogehalt darf nicht negativ sein.");
-  }
-
-  // Sozialversicherung
-  const sv = sozialversicherung2026(
-    brutto,
-    kvZusatz,
-    kinderlos,
-    sachsen
-  );
-
-
-  /*
-   * Vereinfachte Ermittlung des zu versteuernden Einkommens.
-   *
-   * Für einen wirklich amtlichen Gehaltsrechner müsste hier
-   * der BMF-Lohnsteuer-PAP 2026 integriert werden.
-   */
-
-  const jahresBrutto = brutto * 12;
-  const jahresSV = sv.gesamt * 12;
-
-  const zvE = Math.max(
-    0,
-    jahresBrutto -
-    jahresSV -
-    SV_2026.GRUNDFREIBETRAG
-  );
-
-
-  // Einkommensteuer
-  let jahressteuer =
-    einkommensteuer2026(zvE);
-
-
-  /*
-   * Steuerklassen-Faktor
-   *
-   * Hinweis:
-   * Für eine exakte Lohnsteuerberechnung müssen
-   * die offiziellen PAP-Berechnungen verwendet werden.
-   */
-
-  switch (klasse) {
-
-    case 1:
-      break;
-
-    case 2:
-      jahressteuer *= 0.85;
-      break;
-
-    case 3:
-      jahressteuer *= 0.50;
-      break;
-
-    case 4:
-      break;
-
-    case 5:
-      jahressteuer *= 1.35;
-      break;
-
-    case 6:
-      jahressteuer *= 1.35;
-      break;
-
-    default:
-      throw new Error("Ungültige Steuerklasse.");
-  }
-
-
-  const lohnsteuer = round2(
-    jahressteuer / 12
-  );
-
-
-  // Solidaritätszuschlag
-  const soliFreigrenze = 40700 / 12;
-
-  let soli = 0;
-
-  if (lohnsteuer > soliFreigrenze) {
-    soli = round2(
-      lohnsteuer * 0.055
-    );
-  }
-
-
-  // Kirchensteuer
-  const kirchensteuer = kirche
-    ? round2(lohnsteuer * 0.09)
-    : 0;
-
-
-  // Gesamtabzüge
-  const abzuegeGesamt = round2(
-    sv.gesamt +
-    lohnsteuer +
-    soli +
-    kirchensteuer
-  );
-
-
-  // Netto
-  const netto = round2(
-    brutto - abzuegeGesamt
-  );
-
-
-  // Abzugsquote
-  const abzugsquote = brutto > 0
-    ? round2(
-        (abzuegeGesamt / brutto) * 100
-      )
-    : 0;
-
-
-  return {
-
-    brutto: round2(brutto),
-
-    kv: sv.kv,
-    kv2: sv.kv2,
-    rv: sv.rv,
-    av: sv.av,
-    pv: sv.pv,
-
-    sozialabgaben: sv.gesamt,
-
-    lohnsteuer,
-    soli,
-    kirchensteuer,
-
-    abzuegeGesamt,
-    abzugsquote,
-    netto
-  };
-}
 /* ---------------------------- ICONS (inline SVG, minimal) ----------------- */
 const ICO = {
   dashboard:"📊", income:"💰", expenses:"🧾", goals:"🎯", recurring:"🔁",
@@ -3680,6 +3401,54 @@ function parseDateFlexible(s, fmt){
 // Bekannte Bank-Exportformate anhand der Kopfzeile erkennen. Deckt Sparkasse
 // und Volksbank/VR-Banken ab (beide nutzen dasselbe Kernbanken-Exportformat)
 // sowie Revolut. Alles andere läuft über die manuelle Spalten-Zuordnung.
+// Automatische Spalten-Erkennung anhand der Kopfzeile — deckt neben festen
+// Bank-Templates auch generische CSVs mit klar benannten Spalten ab (z.B.
+// "Datum", "Betrag", "Beschreibung"), egal welche Bank/App sie exportiert hat.
+function guessColumnByKeywords(headers, keywords){
+  const h = headers.map(x=>String(x).toLowerCase().trim());
+  for(const kw of keywords){
+    const idx = h.findIndex(x=>x===kw);
+    if(idx>=0) return idx;
+  }
+  for(const kw of keywords){
+    const idx = h.findIndex(x=>x.includes(kw));
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+
+// Datumsformat NICHT vom Nutzer erraten lassen, sondern aus echten
+// Beispielwerten der gewählten Spalte ableiten — verhindert genau den
+// Fehler "Tag und Monat vertauscht", der bei Handauswahl leicht passiert.
+function guessDateFormat(sampleValues){
+  for(const v of sampleValues){
+    const s = String(v).trim();
+    if(/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) return 'ymd';
+    if(/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)) return 'mdy';
+    if(/^\d{1,2}\.\d{1,2}\.\d{2,4}/.test(s)){
+      const m = s.match(/^(\d{1,2})\.(\d{1,2})\./);
+      if(m && Number(m[1])>12) return 'dmy'; // Tag > 12 → kann nur TT.MM sein, eindeutig
+      return 'dmy'; // TT.MM.JJJJ ist im deutschsprachigen Raum die weit überwiegende Konvention
+    }
+  }
+  return 'dmy';
+}
+
+// Zahlenformat aus echten Beispielwerten ableiten statt zu raten: das letzte
+// Trennzeichen (Komma oder Punkt) im Wert ist so gut wie immer das
+// Dezimaltrennzeichen.
+function guessAmountFormat(sampleValues){
+  for(const v of sampleValues){
+    const s = String(v).trim();
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if(lastComma>=0 && lastDot>=0) return lastComma>lastDot ? 'de' : 'us';
+    if(lastComma>=0) return 'de';
+    if(lastDot>=0) return 'us';
+  }
+  return 'de';
+}
+
 function detectBankTemplate(headers){
   const h = headers.map(x=>x.toLowerCase().trim());
   if(h.includes('buchungstag') && h.some(x=>x.includes('betrag'))){
@@ -3746,9 +3515,26 @@ function openBankImportModal(){
 
 function renderBankImportMapping(bg, headers, dataRows, template){
   const body = bg.querySelector('#bi-body');
-  const mapping = template
-    ? { dateCol: template.dateCol, descCol: template.descCol, amountCol: template.amountCol, dateFmt: template.dateFmt, amountFmt: template.amountFmt, stateCol: template.stateCol }
-    : { dateCol: 0, descCol: 1, amountCol: headers.length-1, dateFmt: 'dmy', amountFmt: 'de', stateCol: -1 };
+  let mapping;
+  if(template){
+    mapping = { dateCol: template.dateCol, descCol: template.descCol, amountCol: template.amountCol, dateFmt: template.dateFmt, amountFmt: template.amountFmt, stateCol: template.stateCol };
+  } else {
+    // Kein festes Bank-Template erkannt → Spalten anhand der Kopfzeile raten
+    // und Datums-/Zahlenformat aus echten Beispielwerten ableiten, statt
+    // unsichere Standardwerte (z.B. "letzte Spalte") zu verwenden.
+    const dateCol = Math.max(0, guessColumnByKeywords(headers, ['datum','date','buchungstag','tag']));
+    const descCol = Math.max(0, guessColumnByKeywords(headers, ['beschreibung','description','verwendungszweck','buchungstext','text','empfänger','empfaenger']));
+    let amountCol = guessColumnByKeywords(headers, ['betrag','amount','umsatz','summe']);
+    if(amountCol<0) amountCol = headers.length-1;
+    const samples = dataRows.slice(0,10).map(r=>r[dateCol]).filter(Boolean);
+    const amtSamples = dataRows.slice(0,10).map(r=>r[amountCol]).filter(Boolean);
+    mapping = {
+      dateCol, descCol, amountCol,
+      dateFmt: guessDateFormat(samples),
+      amountFmt: guessAmountFormat(amtSamples),
+      stateCol: -1
+    };
+  }
 
   function colOptions(selected){
     return headers.map((h,i)=>`<option value="${i}" ${i===selected?'selected':''}>${escapeHtml(h||('Spalte '+(i+1)))}</option>`).join('');

@@ -164,7 +164,12 @@ const L = {
     viewingHousehold:"Du siehst gerade das Konto von", backToOwnData:"Zurück zu meinem Konto",
     householdSwitchError:"Konnte nicht zu diesem Konto wechseln.",
     browserNotifications:"Browser-Benachrichtigungen", browserNotificationsDesc:"Zeigt dringende Hinweise (z.B. Budget überschritten) als System-Benachrichtigung, solange die App in einem Tab offen ist.",
-    notificationsDenied:"Benachrichtigungen wurden im Browser nicht erlaubt."
+    notificationsDenied:"Benachrichtigungen wurden im Browser nicht erlaubt.",
+    bankImportTitle:"Kontoauszug importieren", bankImportDesc:"CSV-Export deiner Bank (Sparkasse, Volksbank/VR, Revolut oder eine andere Bank) hochladen. Bekannte Formate werden automatisch erkannt, bei anderen ordnest du die Spalten kurz selbst zu.",
+    chooseFile:"Datei auswählen", templateDetected:"Format erkannt", templateNotDetected:"Format nicht automatisch erkannt — bitte Spalten unten zuordnen.",
+    dateColumn:"Spalte: Datum", descColumn:"Spalte: Beschreibung", amountColumn:"Spalte: Betrag",
+    dateFormat:"Datumsformat", amountFormat:"Zahlenformat", previewLabel:"Vorschau (erste 5 Zeilen):",
+    rowsFound:"Zeilen gefunden", importNow:"Importieren", skipped:"übersprungen"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -255,7 +260,12 @@ const L = {
     viewingHousehold:"You're viewing the account of", backToOwnData:"Back to my account",
     householdSwitchError:"Could not switch to this account.",
     browserNotifications:"Browser notifications", browserNotificationsDesc:"Shows urgent alerts (e.g. budget exceeded) as a system notification while the app is open in a tab.",
-    notificationsDenied:"Notifications were not allowed by the browser."
+    notificationsDenied:"Notifications were not allowed by the browser.",
+    bankImportTitle:"Import bank statement", bankImportDesc:"Upload a CSV export from your bank (Sparkasse, Volksbank/VR, Revolut, or another bank). Known formats are detected automatically; for others you briefly map the columns yourself.",
+    chooseFile:"Choose file", templateDetected:"Format detected", templateNotDetected:"Format not detected automatically — please map the columns below.",
+    dateColumn:"Column: Date", descColumn:"Column: Description", amountColumn:"Column: Amount",
+    dateFormat:"Date format", amountFormat:"Number format", previewLabel:"Preview (first 5 rows):",
+    rowsFound:"rows found", importNow:"Import", skipped:"skipped"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -346,7 +356,12 @@ const L = {
     viewingHousehold:"أنت تشاهد حاليًا حساب", backToOwnData:"العودة إلى حسابي",
     householdSwitchError:"تعذّر التبديل إلى هذا الحساب.",
     browserNotifications:"إشعارات المتصفح", browserNotificationsDesc:"يعرض التنبيهات العاجلة (مثل تجاوز الميزانية) كإشعار نظام طالما التطبيق مفتوح في علامة تبويب.",
-    notificationsDenied:"لم يسمح المتصفح بالإشعارات."
+    notificationsDenied:"لم يسمح المتصفح بالإشعارات.",
+    bankImportTitle:"استيراد كشف حساب بنكي", bankImportDesc:"ارفع ملف CSV من بنكك (Sparkasse أو Volksbank/VR أو Revolut أو أي بنك آخر). يتم اكتشاف الصيغ المعروفة تلقائيًا، ولغيرها يمكنك تحديد الأعمدة بنفسك بسرعة.",
+    chooseFile:"اختيار ملف", templateDetected:"تم اكتشاف الصيغة", templateNotDetected:"لم يتم اكتشاف الصيغة تلقائيًا — يرجى تحديد الأعمدة أدناه.",
+    dateColumn:"عمود: التاريخ", descColumn:"عمود: الوصف", amountColumn:"عمود: المبلغ",
+    dateFormat:"صيغة التاريخ", amountFormat:"صيغة الأرقام", previewLabel:"معاينة (أول 5 صفوف):",
+    rowsFound:"صفوف موجودة", importNow:"استيراد", skipped:"تم التخطي"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -1135,6 +1150,7 @@ function renderKonten(c){
         <div class="val ${gesamtSaldo()>=0?'pos':'neg'}">${fmt(gesamtSaldo())}</div>
       </div>
       <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="btn-bank-import">📥 ${t('bankImportTitle')}</button>
         <button class="btn btn-ghost" id="btn-transfer">🔄 ${t('transfer')}</button>
         <button class="btn btn-primary" id="btn-add-konto">+ ${t('addAccount')}</button>
       </div>
@@ -1159,6 +1175,7 @@ function renderKonten(c){
     </div>`;
   }).join('');
   document.getElementById('btn-add-konto').onclick = ()=>openKontoModal();
+  document.getElementById('btn-bank-import').onclick = openBankImportModal;
   document.getElementById('btn-transfer').onclick = openTransferModal;
   grid.querySelectorAll('[data-edit]').forEach(btn=>{
     btn.onclick = ()=> openKontoModal(konten.find(k=>k.id===btn.dataset.edit));
@@ -3302,7 +3319,8 @@ function generateMonthlyReportPdf(){
 
 // Sehr simpler CSV-Parser passend zum Export-Format oben (Semikolon-getrennt,
 // Felder in doppelten Anführungszeichen, "" als Escape für ein Anführungszeichen).
-function parseCsvLine(line){
+function parseCsvLine(line, delim){
+  delim = delim || ';';
   const out = []; let cur=''; let inQ=false;
   for(let i=0;i<line.length;i++){
     const ch = line[i];
@@ -3312,13 +3330,263 @@ function parseCsvLine(line){
       } else cur+=ch;
     } else {
       if(ch==='"') inQ=true;
-      else if(ch===';'){ out.push(cur); cur=''; }
+      else if(ch===delim){ out.push(cur); cur=''; }
       else cur+=ch;
     }
   }
   out.push(cur);
   return out;
 }
+
+/* ---------------------------- KONTOAUSZUG-IMPORT (Sparkasse/VR/Revolut/generisch) --- */
+// Liest eine Datei als Text — versucht zuerst UTF-8, erkennt typische
+// "Mojibake"-Zeichen (falsch dekodierte Umlaute wie "Ã¤" statt "ä", wie sie
+// bei deutschen Bank-Exporten in ISO-8859-1/Windows-1252 häufig vorkommen)
+// und liest bei Bedarf mit der richtigen Kodierung neu ein.
+function readFileSmart(file){
+  return new Promise((resolve,reject)=>{
+    const r1 = new FileReader();
+    r1.onload = ()=>{
+      const text = r1.result;
+      if(/Ã[¤¶¼ŸŒ¤]|Â[€°]/.test(text)){
+        const r2 = new FileReader();
+        r2.onload = ()=> resolve(r2.result);
+        r2.onerror = ()=> resolve(text);
+        r2.readAsText(file, 'windows-1252');
+      } else {
+        resolve(text);
+      }
+    };
+    r1.onerror = reject;
+    r1.readAsText(file, 'utf-8');
+  });
+}
+
+function detectDelimiter(text){
+  const firstLine = text.split(/\r?\n/)[0] || '';
+  const counts = { ';': (firstLine.match(/;/g)||[]).length, ',': (firstLine.match(/,/g)||[]).length, '\t': (firstLine.match(/\t/g)||[]).length };
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+function parseDelimited(text, delim){
+  return text.replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n').filter(l=>l.trim().length).map(l=>parseCsvLine(l, delim));
+}
+
+// Deutsches Zahlenformat: "1.234,56" oder "-12,50" → 1234.56 / -12.5
+function parseAmountDE(s){
+  return parseFloat(String(s).trim().replace(/\./g,'').replace(',','.'));
+}
+function parseAmountUS(s){
+  return parseFloat(String(s).trim().replace(/,/g,''));
+}
+// Datum in verschiedenen Formaten → ISO (YYYY-MM-DD)
+function parseDateFlexible(s, fmt){
+  s = String(s).trim();
+  let m;
+  if(fmt==='dmy' && (m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/))){
+    let [,d,mo,y] = m; if(y.length===2) y = (Number(y)<70?'20':'19')+y;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  if(fmt==='ymd' && (m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))){
+    const [,y,mo,d] = m;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  if(fmt==='mdy' && (m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))){
+    let [,mo,d,y] = m; if(y.length===2) y = (Number(y)<70?'20':'19')+y;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return todayISO(); // Fallback, falls das Format doch nicht passt
+}
+
+// Bekannte Bank-Exportformate anhand der Kopfzeile erkennen. Deckt Sparkasse
+// und Volksbank/VR-Banken ab (beide nutzen dasselbe Kernbanken-Exportformat)
+// sowie Revolut. Alles andere läuft über die manuelle Spalten-Zuordnung.
+function detectBankTemplate(headers){
+  const h = headers.map(x=>x.toLowerCase().trim());
+  if(h.includes('buchungstag') && h.some(x=>x.includes('betrag'))){
+    return {
+      name: 'Sparkasse / Volksbank / VR-Bank',
+      dateCol: h.indexOf('buchungstag'),
+      descCol: h.indexOf('verwendungszweck')>=0 ? h.indexOf('verwendungszweck') : h.indexOf('buchungstext'),
+      amountCol: h.findIndex(x=>x.includes('betrag') && !x.includes('ursprungs')),
+      dateFmt: 'dmy', amountFmt: 'de'
+    };
+  }
+  if(h.includes('completed date') && h.includes('amount') && h.includes('description')){
+    return {
+      name: 'Revolut',
+      dateCol: h.indexOf('completed date'),
+      descCol: h.indexOf('description'),
+      amountCol: h.indexOf('amount'),
+      dateFmt: 'ymd', amountFmt: 'us',
+      stateCol: h.indexOf('state') // nur COMPLETED-Zeilen importieren
+    };
+  }
+  return null;
+}
+
+function openBankImportModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal" style="max-width:560px;">
+      <h3>📥 ${t('bankImportTitle')}</h3>
+      <div id="bi-body">
+        <div class="desc" style="margin-bottom:14px; line-height:1.6;">${t('bankImportDesc')}</div>
+        <label class="btn btn-primary" for="bi-file" style="cursor:pointer; width:100%; justify-content:center;">📄 ${t('chooseFile')}</label>
+        <input type="file" id="bi-file" accept=".csv,text/csv" style="display:none;"/>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="bi-close">${t('close')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+  bg.querySelector('#bi-close').onclick = ()=>bg.remove();
+
+  bg.querySelector('#bi-file').addEventListener('change', async (ev)=>{
+    const file = ev.target.files[0];
+    if(!file) return;
+    const body = bg.querySelector('#bi-body');
+    body.innerHTML = `<div class="desc">${t('loading')}</div>`;
+    try{
+      const text = await readFileSmart(file);
+      const delim = detectDelimiter(text);
+      const rows = parseDelimited(text, delim);
+      if(rows.length<2){ body.innerHTML = `<div class="desc" style="color:var(--red);">${t('importError')}</div>`; return; }
+      const headers = rows[0];
+      const dataRows = rows.slice(1);
+      const template = detectBankTemplate(headers);
+      renderBankImportMapping(bg, headers, dataRows, template);
+    }catch(e){
+      console.error('Kontoauszug-Import Fehler:', e);
+      body.innerHTML = `<div class="desc" style="color:var(--red);">${t('importError')}</div>`;
+    }
+  });
+}
+
+function renderBankImportMapping(bg, headers, dataRows, template){
+  const body = bg.querySelector('#bi-body');
+  const mapping = template
+    ? { dateCol: template.dateCol, descCol: template.descCol, amountCol: template.amountCol, dateFmt: template.dateFmt, amountFmt: template.amountFmt, stateCol: template.stateCol }
+    : { dateCol: 0, descCol: 1, amountCol: headers.length-1, dateFmt: 'dmy', amountFmt: 'de', stateCol: -1 };
+
+  function colOptions(selected){
+    return headers.map((h,i)=>`<option value="${i}" ${i===selected?'selected':''}>${escapeHtml(h||('Spalte '+(i+1)))}</option>`).join('');
+  }
+
+  function preview(){
+    const rows = [];
+    for(const r of dataRows.slice(0,5)){
+      const datum = parseDateFlexible(r[mapping.dateCol], mapping.dateFmt);
+      const betrag = mapping.amountFmt==='de' ? parseAmountDE(r[mapping.amountCol]) : parseAmountUS(r[mapping.amountCol]);
+      rows.push({ datum, beschreibung: r[mapping.descCol]||'', betrag });
+    }
+    return rows;
+  }
+
+  function renderPreviewTable(){
+    const rows = preview();
+    return `<div style="max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; margin:10px 0;">
+      <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left; padding:6px 8px;">${t('date')}</th>
+          <th style="text-align:left; padding:6px 8px;">${t('description')}</th>
+          <th style="text-align:right; padding:6px 8px;">${t('amount')}</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr style="border-top:1px solid var(--border);">
+            <td style="padding:6px 8px;">${r.datum}</td>
+            <td style="padding:6px 8px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(r.beschreibung)}</td>
+            <td style="padding:6px 8px; text-align:right; font-family:var(--font-num); ${isNaN(r.betrag)?'color:var(--red);':''}">${isNaN(r.betrag)?'?':fmt(r.betrag)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  function render(){
+    body.innerHTML = `
+      ${template ? `<div class="desc" style="margin-bottom:10px; color:var(--green);">✓ ${t('templateDetected')}: ${template.name}</div>` : `<div class="desc" style="margin-bottom:10px; color:var(--amber);">⚠ ${t('templateNotDetected')}</div>`}
+      <div class="field"><label>${t('account')}</label>
+        <select id="bi-konto">${state.data.konten.map(k=>`<option value="${k.id}">${KONTO_TYP_ICON[k.typ]} ${escapeHtml(k.name)}</option>`).join('')}</select>
+      </div>
+      <div class="grid grid-3" style="gap:8px; margin-bottom:6px;">
+        <div class="field" style="margin-bottom:0;"><label>${t('dateColumn')}</label><select id="bi-date-col">${colOptions(mapping.dateCol)}</select></div>
+        <div class="field" style="margin-bottom:0;"><label>${t('descColumn')}</label><select id="bi-desc-col">${colOptions(mapping.descCol)}</select></div>
+        <div class="field" style="margin-bottom:0;"><label>${t('amountColumn')}</label><select id="bi-amt-col">${colOptions(mapping.amountCol)}</select></div>
+      </div>
+      <div class="grid grid-2" style="gap:8px;">
+        <div class="field"><label>${t('dateFormat')}</label>
+          <select id="bi-date-fmt">
+            <option value="dmy" ${mapping.dateFmt==='dmy'?'selected':''}>TT.MM.JJJJ</option>
+            <option value="ymd" ${mapping.dateFmt==='ymd'?'selected':''}>JJJJ-MM-TT</option>
+            <option value="mdy" ${mapping.dateFmt==='mdy'?'selected':''}>MM/TT/JJJJ</option>
+          </select>
+        </div>
+        <div class="field"><label>${t('amountFormat')}</label>
+          <select id="bi-amt-fmt">
+            <option value="de" ${mapping.amountFmt==='de'?'selected':''}>1.234,56 (DE)</option>
+            <option value="us" ${mapping.amountFmt==='us'?'selected':''}>1,234.56 (US)</option>
+          </select>
+        </div>
+      </div>
+      <div class="desc" style="margin-top:10px; font-weight:600;">${t('previewLabel')}</div>
+      ${renderPreviewTable()}
+      <div class="desc" id="bi-count" style="margin-bottom:4px;"></div>
+    `;
+    const updateCount = ()=>{
+      const valid = preview().filter(r=>!isNaN(r.betrag)).length;
+      document.getElementById('bi-count').textContent = `${dataRows.length} ${t('rowsFound')}`;
+    };
+    updateCount();
+
+    ['bi-date-col','bi-desc-col','bi-amt-col','bi-date-fmt','bi-amt-fmt'].forEach(id=>{
+      document.getElementById(id).onchange = e=>{
+        if(id==='bi-date-col') mapping.dateCol = +e.target.value;
+        if(id==='bi-desc-col') mapping.descCol = +e.target.value;
+        if(id==='bi-amt-col') mapping.amountCol = +e.target.value;
+        if(id==='bi-date-fmt') mapping.dateFmt = e.target.value;
+        if(id==='bi-amt-fmt') mapping.amountFmt = e.target.value;
+        const tbl = body.querySelector('table').closest('div');
+        tbl.outerHTML = renderPreviewTable();
+        updateCount();
+      };
+    });
+  }
+  render();
+
+  // Aktions-Buttons im Footer austauschen (Zurück + Importieren statt nur Schließen)
+  const actions = bg.querySelector('.modal-actions');
+  actions.innerHTML = `
+    <button class="btn btn-ghost" id="bi-back">${t('cancel')}</button>
+    <button class="btn btn-primary" id="bi-import">${t('importNow')}</button>
+  `;
+  actions.querySelector('#bi-back').onclick = ()=>bg.remove();
+  actions.querySelector('#bi-import').onclick = ()=>{
+    const kontoId = document.getElementById('bi-konto').value;
+    let imported = 0, skipped = 0;
+    dataRows.forEach(r=>{
+      if(mapping.stateCol!=null && mapping.stateCol>=0 && r[mapping.stateCol] && r[mapping.stateCol].trim().toUpperCase()!=='COMPLETED'){ skipped++; return; }
+      const datum = parseDateFlexible(r[mapping.dateCol], mapping.dateFmt);
+      const betragRoh = mapping.amountFmt==='de' ? parseAmountDE(r[mapping.amountCol]) : parseAmountUS(r[mapping.amountCol]);
+      const beschreibung = (r[mapping.descCol]||'').trim();
+      if(isNaN(betragRoh) || !beschreibung){ skipped++; return; }
+      const istEinnahme = betragRoh >= 0;
+      const betrag = Math.abs(betragRoh);
+      const kategorie = guessKategorie(beschreibung, istEinnahme) || 'Sonstiges';
+      state.data.buchungen.push({ id:uid(), beschreibung, betrag:round2(betrag), kategorie, datum, notiz:'', istEinnahme, kontoId });
+      imported++;
+    });
+    if(imported===0){ toast(t('importError')); return; }
+    persist();
+    toast(`${t('importSuccess')} (${imported}${skipped?', '+skipped+' '+t('skipped'):''})`);
+    bg.remove();
+    render();
+  };
+}
+
+/* ---------------------------- KONTOAUSZUG-IMPORT ENDE ------------------------- */
 
 function importCsv(ev){
   const file = ev.target.files[0];

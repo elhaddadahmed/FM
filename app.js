@@ -676,35 +676,32 @@ function monatVor(delta){
 }
 
 /* ---------------------------- GEHALTSRECHNER 2026 ---------------------------- */
+/* ---------------------------- STEUERRECHNER 2026 ------------------------------- */
 
 function round2(v) {
   return Math.round(v * 100) / 100;
 }
 
-// Werte 2026
 const SV_2026 = {
-  RV: 0.093,          // Arbeitnehmeranteil 9,3 %
-  AV: 0.013,          // Arbeitnehmeranteil 1,3 %
-  KV: 0.073,          // Arbeitnehmeranteil 7,3 %
-  KV_ZUSATZ: 0.029,   // durchschnittlicher Zusatzbeitrag 2,9 % -> Hälfte = 1,45 %
-  PV: 0.017,          // Pflegeversicherung außerhalb Sachsen
-  PV_KINDERLOS: 0.006, // Zuschlag für Kinderlose ab 23
-  BBG_KV: 5812.50,    // monatlich
-  BBG_RV: 8450.00     // monatlich
-};
+  KV: 0.073,
+  RV: 0.093,
+  AV: 0.013,
 
-const STEUER_2026 = {
+  // Pflegeversicherung außerhalb Sachsen
+  PV: 0.018,
+  PV_KINDERLOS_ZUSCHLAG: 0.006,
+
+  BBG_KV_PV: 5812.50,
+  BBG_RV_AV: 8450.00,
+
   GRUNDFREIBETRAG: 12348
 };
 
 
-/**
- * Einkommensteuer nach §32a EStG für 2026
- * Achtung:
- * Das ist die tarifliche Einkommensteuer und noch nicht
- * die vollständige amtliche Lohnsteuerberechnung.
- */
+/* ---------------------------- EINKOMMENSTEUER 2026 ---------------------------- */
+
 function einkommensteuer2026(zvE) {
+
   zvE = Math.floor(Math.max(0, zvE));
 
   if (zvE <= 12348) {
@@ -729,34 +726,90 @@ function einkommensteuer2026(zvE) {
 }
 
 
-/**
- * Sozialversicherung 2026
- */
-function sozialversicherung2026(brutto, kvZusatz = 2.9, kinderlos = false) {
+/* ---------------------------- SOZIALVERSICHERUNG ---------------------------- */
 
-  // KV/PV nur bis zur BBG
-  const kvBrutto = Math.min(brutto, SV_2026.BBG_KV);
+function sozialversicherung2026(
+  brutto,
+  kvZusatz = 3,
+  kinderlos = false,
+  sachsen = false
+) {
 
-  // RV/AV bis zur BBG
-  const rvBrutto = Math.min(brutto, SV_2026.BBG_RV);
-
-  const kv = round2(kvBrutto * SV_2026.KV);
-
-  // Zusatzbeitrag wird zwischen Arbeitgeber und Arbeitnehmer geteilt
-  const kv2 = round2(
-    kvBrutto * (kvZusatz / 100) * 0.5
+  // Kranken- und Pflegeversicherung
+  const kvPvBrutto = Math.min(
+    brutto,
+    SV_2026.BBG_KV_PV
   );
 
-  const rv = round2(rvBrutto * SV_2026.RV);
+  // Renten- und Arbeitslosenversicherung
+  const rvAvBrutto = Math.min(
+    brutto,
+    SV_2026.BBG_RV_AV
+  );
 
-  const av = round2(rvBrutto * SV_2026.AV);
 
-  let pv = round2(kvBrutto * SV_2026.PV);
+  // Krankenversicherung
+  const kv = round2(
+    kvPvBrutto * SV_2026.KV
+  );
 
-  // Kinderlosenzuschlag
-  if (kinderlos) {
-    pv += round2(kvBrutto * SV_2026.PV_KINDERLOS);
+
+  // Individueller Zusatzbeitrag
+  // Arbeitgeber und Arbeitnehmer teilen ihn sich 50/50
+  const kv2 = round2(
+    kvPvBrutto * (kvZusatz / 100) * 0.5
+  );
+
+
+  // Rentenversicherung
+  const rv = round2(
+    rvAvBrutto * SV_2026.RV
+  );
+
+
+  // Arbeitslosenversicherung
+  const av = round2(
+    rvAvBrutto * SV_2026.AV
+  );
+
+
+  // Pflegeversicherung
+  let pv;
+
+  if (sachsen) {
+
+    // Sachsen:
+    // normal: 2,3 %
+    // kinderlos: 2,9 %
+    pv = round2(
+      kvPvBrutto * (
+        0.023 +
+        (kinderlos ? 0.006 : 0)
+      )
+    );
+
+  } else {
+
+    // übrige Bundesländer:
+    // normal: 1,8 %
+    // kinderlos: 2,4 %
+    pv = round2(
+      kvPvBrutto * (
+        0.018 +
+        (kinderlos ? 0.006 : 0)
+      )
+    );
   }
+
+
+  const gesamt = round2(
+    kv +
+    kv2 +
+    rv +
+    av +
+    pv
+  );
+
 
   return {
     kv,
@@ -764,120 +817,121 @@ function sozialversicherung2026(brutto, kvZusatz = 2.9, kinderlos = false) {
     rv,
     av,
     pv,
-    gesamt: round2(kv + kv2 + rv + av + pv)
+    gesamt
   };
 }
 
 
-/**
- * Gehaltsrechner 2026
- *
- * klasse:
- * 1 = Steuerklasse I
- * 2 = Steuerklasse II
- * 3 = Steuerklasse III
- * 4 = Steuerklasse IV
- * 5 = Steuerklasse V
- * 6 = Steuerklasse VI
- */
+/* ---------------------------- HAUPTBERECHNUNG ---------------------------- */
+
 function steuerBerechnen(
   brutto,
   klasse = 1,
   kirche = false,
-  kvZusatz = 2.9,
-  kinderlos = false
+  kvZusatz = 3,
+  kinderlos = false,
+  sachsen = false
 ) {
 
   brutto = Number(brutto);
 
   if (brutto < 0) {
-    throw new Error("Brutto darf nicht negativ sein.");
+    throw new Error("Bruttogehalt darf nicht negativ sein.");
   }
 
   // Sozialversicherung
   const sv = sozialversicherung2026(
     brutto,
     kvZusatz,
-    kinderlos
+    kinderlos,
+    sachsen
   );
 
+
   /*
-   * Vereinfachte steuerliche Berechnung.
+   * Vereinfachte Ermittlung des zu versteuernden Einkommens.
    *
-   * Wichtig:
-   * Die tatsächliche Lohnsteuer wird nach dem
-   * amtlichen BMF-Programmablaufplan (PAP) berechnet.
-   *
-   * Diese Version nutzt die 2026er Einkommensteuertarifformel
-   * als Näherung.
+   * Für einen wirklich amtlichen Gehaltsrechner müsste hier
+   * der BMF-Lohnsteuer-PAP 2026 integriert werden.
    */
 
-  let steuerlichesEinkommen =
-    Math.max(
-      0,
-      brutto * 12
-      - sv.gesamt * 12
-      - STEUER_2026.GRUNDFREIBETRAG
-    );
+  const jahresBrutto = brutto * 12;
+  const jahresSV = sv.gesamt * 12;
 
-  // Vereinfachte Berücksichtigung der Steuerklassen
-  let steuerFaktor = 1;
+  const zvE = Math.max(
+    0,
+    jahresBrutto -
+    jahresSV -
+    SV_2026.GRUNDFREIBETRAG
+  );
+
+
+  // Einkommensteuer
+  let jahressteuer =
+    einkommensteuer2026(zvE);
+
+
+  /*
+   * Steuerklassen-Faktor
+   *
+   * Hinweis:
+   * Für eine exakte Lohnsteuerberechnung müssen
+   * die offiziellen PAP-Berechnungen verwendet werden.
+   */
 
   switch (klasse) {
+
     case 1:
-      steuerFaktor = 1;
       break;
 
     case 2:
-      steuerFaktor = 0.85;
+      jahressteuer *= 0.85;
       break;
 
     case 3:
-      steuerFaktor = 0.50;
+      jahressteuer *= 0.50;
       break;
 
     case 4:
-      steuerFaktor = 1;
       break;
 
     case 5:
-      steuerFaktor = 1.35;
+      jahressteuer *= 1.35;
       break;
 
     case 6:
-      steuerFaktor = 1.35;
+      jahressteuer *= 1.35;
       break;
 
     default:
       throw new Error("Ungültige Steuerklasse.");
   }
 
-  let jahressteuer =
-    einkommensteuer2026(steuerlichesEinkommen) * steuerFaktor;
 
-  let lohnsteuer = round2(jahressteuer / 12);
+  const lohnsteuer = round2(
+    jahressteuer / 12
+  );
 
-  /*
-   * Solidaritätszuschlag 2026
-   *
-   * Der Soli wird nicht einfach pauschal mit 5,5 %
-   * auf jede Lohnsteuer berechnet.
-   */
-  const soliFreigrenzeJahr = 40700;
-  const soliFreigrenzeMonat = soliFreigrenzeJahr / 12;
+
+  // Solidaritätszuschlag
+  const soliFreigrenze = 40700 / 12;
 
   let soli = 0;
 
-  if (lohnsteuer > soliFreigrenzeMonat) {
-    soli = round2(lohnsteuer * 0.055);
+  if (lohnsteuer > soliFreigrenze) {
+    soli = round2(
+      lohnsteuer * 0.055
+    );
   }
+
 
   // Kirchensteuer
   const kirchensteuer = kirche
     ? round2(lohnsteuer * 0.09)
     : 0;
 
-  // Netto
+
+  // Gesamtabzüge
   const abzuegeGesamt = round2(
     sv.gesamt +
     lohnsteuer +
@@ -885,16 +939,23 @@ function steuerBerechnen(
     kirchensteuer
   );
 
+
+  // Netto
   const netto = round2(
     brutto - abzuegeGesamt
   );
 
-  const abzugsquote =
-    brutto > 0
-      ? round2((abzuegeGesamt / brutto) * 100)
-      : 0;
+
+  // Abzugsquote
+  const abzugsquote = brutto > 0
+    ? round2(
+        (abzuegeGesamt / brutto) * 100
+      )
+    : 0;
+
 
   return {
+
     brutto: round2(brutto),
 
     kv: sv.kv,

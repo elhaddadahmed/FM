@@ -27,21 +27,45 @@ create table if not exists public.user_data (
 
 alter table public.user_data enable row level security;
 
+drop policy if exists "Nutzer sehen nur ihre eigenen Daten" on public.user_data;
 create policy "Nutzer sehen nur ihre eigenen Daten"
   on public.user_data for select
   using (auth.uid() = id);
 
+drop policy if exists "Nutzer legen nur ihre eigene Zeile an" on public.user_data;
 create policy "Nutzer legen nur ihre eigene Zeile an"
   on public.user_data for insert
   with check (auth.uid() = id);
 
+drop policy if exists "Nutzer ändern nur ihre eigenen Daten" on public.user_data;
 create policy "Nutzer ändern nur ihre eigenen Daten"
   on public.user_data for update
   using (auth.uid() = id);
 
+drop policy if exists "Nutzer löschen nur ihre eigenen Daten" on public.user_data;
 create policy "Nutzer löschen nur ihre eigenen Daten"
   on public.user_data for delete
   using (auth.uid() = id);
+
+-- Zusätzliche (additive) Policies: eingeladene Haushaltsmitglieder dürfen die
+-- Daten des Eigentümers zusätzlich zu ihren eigenen sehen/ändern. Ohne diese
+-- zwei Policies scheitert "Konto wechseln" im Familienkonto-Feature an RLS,
+-- obwohl die Einladung selbst (household_members-Zeile) erfolgreich anlegt.
+drop policy if exists "Haushaltsmitglieder sehen freigegebene Daten" on public.user_data;
+create policy "Haushaltsmitglieder sehen freigegebene Daten"
+  on public.user_data for select
+  using (exists (
+    select 1 from public.household_members hm
+    where hm.household_owner_id = user_data.id and hm.member_id = auth.uid()
+  ));
+
+drop policy if exists "Haushaltsmitglieder ändern freigegebene Daten" on public.user_data;
+create policy "Haushaltsmitglieder ändern freigegebene Daten"
+  on public.user_data for update
+  using (exists (
+    select 1 from public.household_members hm
+    where hm.household_owner_id = user_data.id and hm.member_id = auth.uid()
+  ));
 
 -- =============================================================================
 -- ABO-PLAN (Free/Pro)
@@ -53,10 +77,16 @@ create table if not exists public.subscriptions (
 );
 alter table public.subscriptions enable row level security;
 
+drop policy if exists "Nutzer sehen nur ihren eigenen Plan" on public.subscriptions;
 create policy "Nutzer sehen nur ihren eigenen Plan"
   on public.subscriptions for select using (auth.uid() = id);
-create policy "Nutzer legen nur ihren eigenen Plan an"
-  on public.subscriptions for insert with check (auth.uid() = id);
+drop policy if exists "Nutzer legen nur ihren eigenen Free-Plan an" on public.subscriptions;
+create policy "Nutzer legen nur ihren eigenen Free-Plan an"
+  on public.subscriptions for insert with check (auth.uid() = id and plan = 'free');
+-- Bewusst KEINE Update/Delete-Policy für normale Nutzer — ein Upgrade auf
+-- "pro" darf ausschließlich über eine service_role-Funktion (z.B. Stripe-
+-- Webhook) passieren, die RLS umgeht. Ohne "and plan='free'" oben könnte
+-- sich sonst jeder über die Browser-Konsole direkt selbst auf pro setzen.
 
 -- =============================================================================
 -- FAMILIENKONTO (Household)
@@ -70,14 +100,17 @@ create table if not exists public.household_members (
 );
 alter table public.household_members enable row level security;
 
+drop policy if exists "Eigentümer und Mitglied sehen den Eintrag" on public.household_members;
 create policy "Eigentümer und Mitglied sehen den Eintrag"
   on public.household_members for select
   using (auth.uid() = household_owner_id or auth.uid() = member_id);
 
+drop policy if exists "Nur der Eigentümer lädt ein" on public.household_members;
 create policy "Nur der Eigentümer lädt ein"
   on public.household_members for insert
   with check (auth.uid() = household_owner_id);
 
+drop policy if exists "Eigentümer oder Mitglied kann den Eintrag löschen" on public.household_members;
 create policy "Eigentümer oder Mitglied kann den Eintrag löschen"
   on public.household_members for delete
   using (auth.uid() = household_owner_id or auth.uid() = member_id);
@@ -112,9 +145,11 @@ create table if not exists public.login_history (
 );
 alter table public.login_history enable row level security;
 
+drop policy if exists "Nutzer sehen nur ihre eigene Login-Historie" on public.login_history;
 create policy "Nutzer sehen nur ihre eigene Login-Historie"
   on public.login_history for select using (auth.uid() = user_id);
 
+drop policy if exists "Nutzer tragen nur eigene Logins ein" on public.login_history;
 create policy "Nutzer tragen nur eigene Logins ein"
   on public.login_history for insert with check (auth.uid() = user_id);
 
@@ -157,12 +192,47 @@ grant execute on function public.get_login_email(text) to anon, authenticated;
 -- =============================================================================
 -- STORAGE BUCKETS (Belege, Profilbilder)
 -- =============================================================================
--- Im Dashboard unter "Storage" zwei Buckets anlegen:
---   - "receipts" (privat) — für Belege zu Buchungen
---   - "avatars"  (öffentlich lesbar) — für Profilbilder
--- Für "receipts" reichen die Standard-RLS-Regeln auf Pfad-Basis
--- (Pfad beginnt mit der eigenen user_id), für "avatars" kann Lesen öffentlich
--- sein, Schreiben nur für den eigenen Ordner.
+-- Legt die Buckets automatisch an UND die dazugehörigen Zugriffsregeln —
+-- reines manuelles Anlegen im Dashboard reicht NICHT: Supabase aktiviert RLS
+-- auf Storage standardmäßig, und ohne die Policies unten kann NIEMAND
+-- (auch nicht der Besitzer selbst) etwas hoch-/herunterladen.
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Jeder darf Profilbilder sehen" on storage.objects;
+create policy "Jeder darf Profilbilder sehen"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "Nutzer laden nur ihr eigenes Profilbild hoch" on storage.objects;
+create policy "Nutzer laden nur ihr eigenes Profilbild hoch"
+  on storage.objects for insert
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "Nutzer ersetzen nur ihr eigenes Profilbild" on storage.objects;
+create policy "Nutzer ersetzen nur ihr eigenes Profilbild"
+  on storage.objects for update
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+insert into storage.buckets (id, name, public)
+values ('receipts', 'receipts', false)
+on conflict (id) do nothing;
+
+drop policy if exists "Nutzer sehen nur ihre eigenen Belege" on storage.objects;
+create policy "Nutzer sehen nur ihre eigenen Belege"
+  on storage.objects for select
+  using (bucket_id = 'receipts' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "Nutzer laden nur eigene Belege hoch" on storage.objects;
+create policy "Nutzer laden nur eigene Belege hoch"
+  on storage.objects for insert
+  with check (bucket_id = 'receipts' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "Nutzer löschen nur eigene Belege" on storage.objects;
+create policy "Nutzer löschen nur eigene Belege"
+  on storage.objects for delete
+  using (bucket_id = 'receipts' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- =============================================================================
 -- ADMIN-ZUGANG

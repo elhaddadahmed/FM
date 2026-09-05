@@ -1,6 +1,6 @@
 /* =========================================================================
    FINANZMANAGER — Web Edition
-   Persistente Speicherung über window.storage (Artifacts Storage API)
+   Persistente Speicherung über Supabase (Postgres + Auth + Storage)
    ========================================================================= */
 
 /* ---------------------------- KONSTANTEN ------------------------------- */

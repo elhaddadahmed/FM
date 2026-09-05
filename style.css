@@ -38,11 +38,8 @@ body{
   -webkit-font-smoothing:antialiased; overflow:hidden;
   transition:background .25s ease, color .25s ease;
 }
-/* 100vh ist auf Handys wegen der Browser-Adressleiste unzuverlässig — mit
-   100dvh (dynamic viewport height) verschwindet nichts hinter der UI. */
 #root{height:100vh; height:100dvh; width:100vw; position:relative;}
 
-/* ---------- RTL (Arabisch) ---------- */
 html[dir="rtl"] body{ direction:rtl; }
 html[dir="rtl"] .sidebar{ border-right:none; border-left:1px solid var(--border); }
 html[dir="rtl"] .sidebar.open{ transform:translateX(0); }
@@ -60,7 +57,6 @@ input,select{font-family:inherit;}
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 a{color:inherit;}
 
-/* ---------- LOGIN ---------- */
 .login-wrap{
   height:100%; width:100%; display:flex; align-items:center; justify-content:center;
   position:relative; background:
@@ -101,7 +97,6 @@ a{color:inherit;}
 .err-msg{background:var(--red-dim); color:var(--red); border-radius:9px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
 .err-msg.show{display:block;}
 
-/* ---------- APP SHELL ---------- */
 .app-shell{display:flex; height:100%; width:100%;}
 .sidebar{
   width:230px; min-width:230px; background:var(--sidebar); border-right:1px solid var(--border);
@@ -135,7 +130,6 @@ a{color:inherit;}
 .month-nav .label{font-size:13.5px; font-weight:600; min-width:110px; text-align:center;}
 .content{flex:1; overflow-y:auto; padding:24px 28px 60px;}
 
-/* ---------- CARDS / GRIDS ---------- */
 .grid{display:grid; gap:14px;}
 .grid-4{grid-template-columns:repeat(4,1fr);}
 .grid-2{grid-template-columns:1fr 1fr;}
@@ -151,7 +145,6 @@ a{color:inherit;}
 .section-title{font-size:15px; font-weight:700; margin:26px 0 12px;}
 .section-title:first-child{margin-top:0;}
 
-/* ---------- TABLE / LIST ---------- */
 .tx-list{display:flex; flex-direction:column; gap:2px;}
 .tx-row{
   display:flex; align-items:center; gap:14px; padding:12px 8px; border-radius:10px;
@@ -170,7 +163,6 @@ a{color:inherit;}
 .empty-state{text-align:center; padding:40px 20px; color:var(--muted); font-size:13px;}
 .empty-state .big{font-size:30px; margin-bottom:10px;}
 
-/* ---------- FORMS / MODAL ---------- */
 .modal-bg{position:fixed; inset:0; background:rgba(2,4,10,.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; z-index:100;}
 .modal{background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:26px 26px 22px; width:400px; max-width:92vw; box-shadow:var(--shadow); max-height:88vh; overflow-y:auto;}
 .modal h3{margin:0 0 18px; font-size:16px; font-weight:700;}
@@ -183,7 +175,6 @@ a{color:inherit;}
 .seg button{flex:1; background:none; border:none; padding:8px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--muted);}
 .seg button.active{background:var(--card); color:var(--fg); box-shadow:0 1px 3px rgba(0,0,0,.15);}
 
-/* ---------- MISC ---------- */
 .bar-track{height:9px; border-radius:5px; background:var(--surface2); overflow:hidden;}
 .bar-fill{height:100%; border-radius:5px; transition:width .4s ease;}
 .notif{display:flex; align-items:center; gap:14px; padding:13px 16px; border-radius:12px; margin-bottom:8px; font-size:13px; font-weight:600; border:1px solid transparent;}
@@ -206,14 +197,12 @@ a{color:inherit;}
 .recur-row:last-child{border-bottom:none;}
 .due-badge{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:6px;}
 
-/* Hamburger-Button: standardmäßig versteckt, nur auf schmalen Bildschirmen sichtbar */
 .sb-hamburger{display:none; flex-shrink:0;}
 .sidebar-backdrop{
   display:none; position:fixed; inset:0; background:rgba(2,4,10,.5); z-index:79;
 }
 .sidebar-backdrop.show{display:block;}
 
-/* Bottom-Nav-Leiste + Schnell-hinzufügen-Button: nur auf Mobile sichtbar (siehe Media Query) */
 .bottom-nav{display:none;}
 .fab{display:none;}
 .fab-menu{display:none;}
@@ -227,7 +216,6 @@ a{color:inherit;}
   .grid-4{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;}
   .grid-3{grid-template-columns:1fr;}
-  /* Platz für die Bottom-Nav (56px + Safe-Area) unten freihalten */
   .content{padding:16px; padding-bottom:calc(78px + env(safe-area-inset-bottom));}
   .topbar{padding:calc(12px + env(safe-area-inset-top)) 14px 12px;}
   .topbar h2{font-size:16px; max-width:52vw;}
@@ -237,19 +225,14 @@ a{color:inherit;}
   .login-brand{top:20px; left:20px;}
   html[dir="rtl"] .login-brand{left:auto; right:20px;}
 
-  /* Größere Tippflächen (Apple/Google-Richtwert: min. 44px) */
   .btn, .icon-btn, .sb-item, .chip, .tx-del, .due-badge{ min-height:44px; }
   .btn-sm{ min-height:40px; }
   .icon-btn{ width:40px; }
   .chip{ padding:10px 14px; }
   .tx-del{ opacity:1; width:40px; }
 
-  /* Verhindert, dass iOS Safari beim Fokussieren eines Inputs reinzoomt
-     (passiert nur, wenn die Schriftgröße unter 16px liegt). */
   input, select, textarea{ font-size:16px !important; }
 
-  /* Modals als Bottom-Sheet: von unten reingleiten statt mittig zu schweben —
-     lässt sich mit dem Daumen deutlich einfacher bedienen. */
   .modal-bg{ align-items:flex-end; padding:0; }
   .modal{
     width:100%; max-width:100%; border-radius:20px 20px 0 0;
@@ -258,7 +241,6 @@ a{color:inherit;}
   }
   @keyframes sheet-up{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
 
-  /* Bottom-Nav-Leiste */
   .bottom-nav{
     display:flex; position:fixed; left:0; right:0; bottom:0; z-index:85;
     background:var(--sidebar); border-top:1px solid var(--border);
@@ -272,7 +254,6 @@ a{color:inherit;}
   .bn-item .ic{ font-size:19px; }
   .bn-item.active{ color:var(--accent); }
 
-  /* Schnell-hinzufügen-Button (FAB) über der Bottom-Nav */
   .fab{
     display:flex; position:fixed; right:18px; bottom:calc(72px + env(safe-area-inset-bottom)); z-index:86;
     width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--purple));

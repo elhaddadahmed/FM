@@ -41,10 +41,6 @@ function guessKategorie(text, isIncome){
   const lower = (text||'').trim().toLowerCase();
   if(lower.length<3) return null;
 
-  // 1) Aus der eigenen Buchungshistorie lernen: gab es schon mal eine sehr
-  // ähnliche Beschreibung? Dann deren Kategorie vorschlagen (aktuellste
-  // zuerst) — das ist "smarter" als feste Stichwörter, weil es sich an
-  // Händler/Bezeichnungen anpasst, die NUR bei dir vorkommen.
   const words = lower.split(/\s+/).filter(w=>w.length>=3);
   if(words.length){
     const kandidaten = state.data.buchungen
@@ -52,14 +48,12 @@ function guessKategorie(text, isIncome){
       .slice().sort((a,b)=> b.datum.localeCompare(a.datum));
     for(const b of kandidaten){
       const bl = b.beschreibung.toLowerCase();
-      // Treffer: mind. ein signifikantes Wort (≥3 Zeichen) kommt in beiden Texten vor
       if(words.some(w=> bl.includes(w)) || words.some(w=> lower.includes(w) && bl.split(/\s+/).some(bw=>bw.length>=3 && w.includes(bw)))){
         if(allCats(isIncome).some(k=>k.key===b.kategorie)) return b.kategorie;
       }
     }
   }
 
-  // 2) Fallback: feste Stichwortliste (deckt Erstnutzung ohne Historie ab)
   const hit = AUTO_KAT_KEYWORDS.find(([kw]) => lower.includes(kw));
   if(!hit) return null;
   const [,kat] = hit;
@@ -169,7 +163,26 @@ const L = {
     chooseFile:"Datei auswählen", templateDetected:"Format erkannt", templateNotDetected:"Format nicht automatisch erkannt — bitte Spalten unten zuordnen.",
     dateColumn:"Spalte: Datum", descColumn:"Spalte: Beschreibung", amountColumn:"Spalte: Betrag",
     dateFormat:"Datumsformat", amountFormat:"Zahlenformat", previewLabel:"Vorschau (erste 5 Zeilen):",
-    rowsFound:"Zeilen gefunden", importNow:"Importieren", skipped:"übersprungen"
+    rowsFound:"Zeilen gefunden", importNow:"Importieren", skipped:"übersprungen",
+    biometricLock:"Gesichtserkennung / Biometrie",
+    biometricDesc:"Entsperrt die App auf diesem Gerät per Face ID / Fingerabdruck / Windows Hello, statt jedes Mal das Passwort einzugeben. Ersetzt NICHT den eigentlichen Login.",
+    biometricSetup:"Einrichten", biometricRemove:"Entfernen",
+    biometricUnlock:"Entsperren", biometricPrompt:"App ist gesperrt. Zum Fortfahren entsperren.",
+    biometricNotSupported:"Biometrie wird auf diesem Gerät/Browser nicht unterstützt.",
+    biometricFailed:"Entsperrung fehlgeschlagen oder abgebrochen.", usePassword:"Mit Passwort anmelden",
+    mfaTitle:"Zwei-Faktor-Code", mfaDesc:"Gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+    mfaCode:"Code", mfaVerify:"Bestätigen", mfaWrongCode:"Code falsch oder abgelaufen.",
+    mfaSetupTitle:"Zwei-Faktor-Authentifizierung einrichten",
+    mfaSetupDesc:"Scanne den QR-Code mit einer Authenticator-App (z.B. Google Authenticator, Authy) und gib den angezeigten Code ein, um zu bestätigen.",
+    mfaEnabled:"Zwei-Faktor-Authentifizierung aktiviert.", mfaDisabled:"Zwei-Faktor-Authentifizierung deaktiviert.",
+    mfaDisableConfirm:"Wirklich deaktivieren? Dein Konto ist dann nur noch mit Passwort geschützt.",
+    mfaActive:"Aktiv", mfaInactive:"Nicht aktiviert", mfaEnable:"Aktivieren", mfaDisable:"Deaktivieren",
+    mfaLoadError:"Status konnte nicht geladen werden.", twoFactor:"Zwei-Faktor-Authentifizierung (2FA)",
+    twoFactorDesc:"Zusätzlicher Code aus einer Authenticator-App beim Login — schützt auch, wenn dein Passwort gestohlen wird.",
+    loginHistory:"Login-Historie", loginHistoryDesc:"Die letzten Anmeldungen an deinem Konto.",
+    loginHistoryError:"Historie konnte nicht geladen werden.", noLoginHistory:"Noch keine Anmeldungen protokolliert.",
+    autoLogout:"Automatische Abmeldung", autoLogoutDesc:"Sperrt die App nach Inaktivität — schützt, wenn du das Gerät offen liegen lässt.",
+    autoLogoutOff:"Aus", autoLogoutMin5:"5 Min", autoLogoutMin15:"15 Min", autoLogoutMin30:"30 Min"
   },
   en: {
     dashboard:"Dashboard", income:"Income", expenses:"Expenses", goals:"Savings goals",
@@ -265,7 +278,26 @@ const L = {
     chooseFile:"Choose file", templateDetected:"Format detected", templateNotDetected:"Format not detected automatically — please map the columns below.",
     dateColumn:"Column: Date", descColumn:"Column: Description", amountColumn:"Column: Amount",
     dateFormat:"Date format", amountFormat:"Number format", previewLabel:"Preview (first 5 rows):",
-    rowsFound:"rows found", importNow:"Import", skipped:"skipped"
+    rowsFound:"rows found", importNow:"Import", skipped:"skipped",
+    biometricLock:"Face / Biometric unlock",
+    biometricDesc:"Unlocks the app on this device via Face ID / fingerprint / Windows Hello instead of typing your password every time. Does NOT replace the actual login.",
+    biometricSetup:"Set up", biometricRemove:"Remove",
+    biometricUnlock:"Unlock", biometricPrompt:"App is locked. Unlock to continue.",
+    biometricNotSupported:"Biometrics are not supported on this device/browser.",
+    biometricFailed:"Unlock failed or was cancelled.", usePassword:"Use password instead",
+    mfaTitle:"Two-factor code", mfaDesc:"Enter the 6-digit code from your authenticator app.",
+    mfaCode:"Code", mfaVerify:"Verify", mfaWrongCode:"Code incorrect or expired.",
+    mfaSetupTitle:"Set up two-factor authentication",
+    mfaSetupDesc:"Scan the QR code with an authenticator app (e.g. Google Authenticator, Authy) and enter the shown code to confirm.",
+    mfaEnabled:"Two-factor authentication enabled.", mfaDisabled:"Two-factor authentication disabled.",
+    mfaDisableConfirm:"Really disable? Your account will then only be protected by a password.",
+    mfaActive:"Active", mfaInactive:"Not enabled", mfaEnable:"Enable", mfaDisable:"Disable",
+    mfaLoadError:"Status could not be loaded.", twoFactor:"Two-factor authentication (2FA)",
+    twoFactorDesc:"An extra code from an authenticator app at login — protects you even if your password is stolen.",
+    loginHistory:"Login history", loginHistoryDesc:"The most recent sign-ins to your account.",
+    loginHistoryError:"History could not be loaded.", noLoginHistory:"No sign-ins logged yet.",
+    autoLogout:"Automatic logout", autoLogoutDesc:"Locks the app after inactivity — protects you if you leave the device unattended.",
+    autoLogoutOff:"Off", autoLogoutMin5:"5 min", autoLogoutMin15:"15 min", autoLogoutMin30:"30 min"
   },
   ar: {
     dashboard:"لوحة التحكم", income:"الدخل", expenses:"المصروفات", goals:"أهداف الادخار",
@@ -361,7 +393,26 @@ const L = {
     chooseFile:"اختيار ملف", templateDetected:"تم اكتشاف الصيغة", templateNotDetected:"لم يتم اكتشاف الصيغة تلقائيًا — يرجى تحديد الأعمدة أدناه.",
     dateColumn:"عمود: التاريخ", descColumn:"عمود: الوصف", amountColumn:"عمود: المبلغ",
     dateFormat:"صيغة التاريخ", amountFormat:"صيغة الأرقام", previewLabel:"معاينة (أول 5 صفوف):",
-    rowsFound:"صفوف موجودة", importNow:"استيراد", skipped:"تم التخطي"
+    rowsFound:"صفوف موجودة", importNow:"استيراد", skipped:"تم التخطي",
+    biometricLock:"فتح ببصمة الوجه / القياسات الحيوية",
+    biometricDesc:"يفتح التطبيق على هذا الجهاز عبر Face ID / بصمة الإصبع / Windows Hello بدلاً من كتابة كلمة المرور في كل مرة. لا يحل محل تسجيل الدخول الفعلي.",
+    biometricSetup:"إعداد", biometricRemove:"إزالة",
+    biometricUnlock:"فتح", biometricPrompt:"التطبيق مقفل. يرجى فتحه للمتابعة.",
+    biometricNotSupported:"القياسات الحيوية غير مدعومة على هذا الجهاز/المتصفح.",
+    biometricFailed:"فشل الفتح أو تم إلغاؤه.", usePassword:"استخدام كلمة المرور بدلاً من ذلك",
+    mfaTitle:"رمز التحقق بخطوتين", mfaDesc:"أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة الخاص بك.",
+    mfaCode:"الرمز", mfaVerify:"تحقق", mfaWrongCode:"الرمز غير صحيح أو منتهي الصلاحية.",
+    mfaSetupTitle:"إعداد التحقق بخطوتين",
+    mfaSetupDesc:"امسح رمز QR باستخدام تطبيق مصادقة (مثل Google Authenticator أو Authy) وأدخل الرمز المعروض للتأكيد.",
+    mfaEnabled:"تم تفعيل التحقق بخطوتين.", mfaDisabled:"تم تعطيل التحقق بخطوتين.",
+    mfaDisableConfirm:"هل تريد التعطيل فعلاً؟ سيصبح حسابك محميًا بكلمة المرور فقط.",
+    mfaActive:"مفعّل", mfaInactive:"غير مفعّل", mfaEnable:"تفعيل", mfaDisable:"تعطيل",
+    mfaLoadError:"تعذّر تحميل الحالة.", twoFactor:"التحقق بخطوتين (2FA)",
+    twoFactorDesc:"رمز إضافي من تطبيق مصادقة عند تسجيل الدخول — يحميك حتى لو سُرقت كلمة المرور.",
+    loginHistory:"سجل تسجيل الدخول", loginHistoryDesc:"آخر عمليات تسجيل الدخول إلى حسابك.",
+    loginHistoryError:"تعذّر تحميل السجل.", noLoginHistory:"لا توجد عمليات تسجيل دخول مسجلة بعد.",
+    autoLogout:"تسجيل الخروج التلقائي", autoLogoutDesc:"يقفل التطبيق بعد فترة من عدم النشاط — يحميك إذا تركت الجهاز دون مراقبة.",
+    autoLogoutOff:"إيقاف", autoLogoutMin5:"5 دقائق", autoLogoutMin15:"15 دقيقة", autoLogoutMin30:"30 دقيقة"
   }
 };
 function t(key){ return (L[state.lang] && L[state.lang][key]) || L.de[key] || key; }
@@ -382,11 +433,6 @@ function catLabel(key){
 }
 
 /* ---------------------------- SUPABASE CLIENT ---------------------------- */
-// SUPABASE_URL / SUPABASE_ANON_KEY kommen aus supabase-config.js
-// Falls das supabase-js Skript von der CDN (jsdelivr) blockiert wurde — z.B.
-// durch Brave Shields, einen Werbeblocker oder eine Firmen-Firewall — ist
-// window.supabase nicht definiert. Statt eines kryptischen Fehlers oder
-// eines ewigen Ladebildschirms zeigen wir dann eine klare Meldung.
 if(!window.supabase){
   document.addEventListener('DOMContentLoaded', ()=>{
     const root = document.getElementById('root');
@@ -408,12 +454,6 @@ if(!window.supabase){
 }
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Interner Trick: Die App zeigt weiterhin "Benutzername" (wie im Original-
-// Java-Programm), Supabase Auth braucht aber intern eine E-Mail-Adresse.
-// Falls beim Registrieren keine echte E-Mail angegeben wird, bauen wir
-// automatisch eine interne Pseudo-Adresse. Für den Login wird die
-// tatsächlich hinterlegte Adresse serverseitig über die RPC-Funktion
-// "get_login_email" (siehe schema.sql) anhand des Benutzernamens ermittelt.
 function usernameToEmail(username){
   return username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '') + '@finanzmanager.local';
 }
@@ -467,10 +507,6 @@ const Store = {
     if(error) console.error('saveUserData Fehler:', error);
     return !error;
   },
-  // Pro/Free-Plan lebt bewusst in einer EIGENEN Tabelle mit eigenen RLS-Regeln
-  // (siehe schema.sql) — so kann ein Nutzer sich nicht einfach selbst über die
-  // Browser-Konsole auf "pro" setzen. Nur eine serverseitige Funktion
-  // (z.B. Stripe-Webhook mit service_role) darf das ändern.
   async createFreeSubscription(userId){
     const { error } = await sb.from('subscriptions').insert({ id:userId, plan:'free' });
     if(error) console.error('createFreeSubscription Fehler:', error);
@@ -480,14 +516,10 @@ const Store = {
     try{
       const { data, error } = await sb.from('subscriptions').select('plan').eq('id', userId).single();
       if(!error && data) return data.plan || 'free';
-      // Kein Eintrag gefunden (z.B. Konto von vor Einführung des Pro/Free-
-      // Systems) — automatisch einen Free-Eintrag nachtragen, damit das
-      // nicht bei jedem alten Konto manuell im Dashboard gemacht werden muss.
       await this.createFreeSubscription(userId);
       return 'free';
     }catch(e){ console.error('getPlan Fehler:', e); return 'free'; }
   },
-  // --- Familienkonto ---
   async inviteHouseholdMember(ownerId, username){
     try{
       const { data: memberId, error: e1 } = await sb.rpc('find_user_id_by_username', { p_username: username });
@@ -520,21 +552,18 @@ const Store = {
 
 function emptyUserData(){
   return {
-    buchungen: [],   // {id, beschreibung, betrag, kategorie, datum(ISO), notiz, istEinnahme, kontoId, istUeberweisung?, gegenkontoId?}
-    sparziele: [],   // {id, name, ziel, gespart}
-    wiederkehrend: [], // {id, name, betrag, kategorie, naechstesFaellig(ISO), istEinnahme, notiz, kontoId}
-    konten: [{ id: uid(), name: "Hauptkonto", typ: "bank", startsaldo: 0 }], // {id, name, typ, startsaldo}
-    kategorien: { ausgaben: [], einnahmen: [] }, // eigene Kategorien: {key, icon, eltern}
-    budgets: { gesamt: null, kategorien: [] }, // gesamt: Zahl|null; kategorien: [{kategorie, betrag}]
-    monatsziel: null, // Zahl|null — Sparziel pro Monat (wiederkehrend, nicht auf einen Monat fixiert)
-    challenges: [], // {id, typ:'no_spend'|'save_amount'|'spend_limit', kategorie?, betrag?, start(ISO), ende(ISO)}
+    buchungen: [],
+    sparziele: [],
+    wiederkehrend: [],
+    konten: [{ id: uid(), name: "Hauptkonto", typ: "bank", startsaldo: 0 }],
+    kategorien: { ausgaben: [], einnahmen: [] },
+    budgets: { gesamt: null, kategorien: [] },
+    monatsziel: null,
+    challenges: [],
     settings: { theme:"dark", lang:"de" }
   };
 }
 
-// Sorgt dafür, dass ältere Konten (vor Einführung von Mehrfach-Konten) nicht
-// kaputtgehen: legt bei Bedarf ein Standardkonto an und hängt alle
-// bestehenden Buchungen/wiederkehrenden Zahlungen ohne kontoId daran.
 function migrateData(data){
   let changed = false;
   if(!data.konten || data.konten.length===0){
@@ -572,8 +601,8 @@ function todayISO(){ return new Date().toISOString().slice(0,10); }
 
 /* ---------------------------- STATE -------------------------------------- */
 const state = {
-  screen: 'login',        // login | register | app
-  authId: null,            // Supabase Auth user id
+  screen: 'login',
+  authId: null,
   authUsername: null,
   displayName: null,
   theme: 'dark',
@@ -582,17 +611,24 @@ const state = {
   aktivesJahr: new Date().getFullYear(),
   aktiverMonat: new Date().getMonth()+1,
   data: emptyUserData(),
-  plan: 'free', // 'free' | 'pro' — kommt aus der subscriptions-Tabelle, nicht clientseitig änderbar
+  plan: 'free',
   autoCategorize: true,
   currency: 'EUR',
   notificationsEnabled: false,
-  dataOwnerId: null,       // wessen Daten gerade angezeigt werden (eigene ID oder ein Haushalts-Eigentümer)
-  householdMode: false,    // true = wir betrachten gerade fremde (geteilte) Daten
+  dataOwnerId: null,
+  householdMode: false,
   householdOwnerName: '',
-  dataOwnerSettings: null, // Settings des Haushalts-Eigentümers, damit persist() sie nicht überschreibt
+  dataOwnerSettings: null,
   txFilter: { search:'', kategorie:'', kontoId:'' },
   loginError: '',
-  regError: ''
+  regError: '',
+  biometricEnabled: false,
+  lockError: '',
+  mfaFactorId: null,
+  mfaError: '',
+  pendingAuthUser: null,
+  pendingAuthUsername: null,
+  autoLogoutMinutes: 15
 };
 function isPro(){ return state.plan === 'pro'; }
 
@@ -607,7 +643,9 @@ async function persist(){
   if(!state.authId) return;
   state.data.settings = state.householdMode
     ? (state.dataOwnerSettings || { theme:'dark', lang:'de' })
-    : { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize, currency: state.currency, notificationsEnabled: state.notificationsEnabled };
+    : { theme: state.theme, lang: state.lang, autoCategorize: state.autoCategorize, currency: state.currency,
+        notificationsEnabled: state.notificationsEnabled, biometricEnabled: state.biometricEnabled,
+        autoLogoutMinutes: state.autoLogoutMinutes };
   const ok = await Store.saveUserData(state.dataOwnerId||state.authId, state.data);
   window.__syncOk = ok;
   injectStorageWarning();
@@ -632,9 +670,6 @@ function gefilterteBuchungen(){
     return d.getFullYear()===state.aktivesJahr && (d.getMonth()+1)===state.aktiverMonat;
   }).sort((a,b)=> b.datum.localeCompare(a.datum));
 }
-// Überweisungen zwischen eigenen Konten sind kein "echtes" Einkommen/Ausgabe —
-// sie würden sonst Sparquote & Dashboard verfälschen (Geld bewegt sich nur
-// zwischen eigenen Töpfen). Deshalb hier immer herausgefiltert.
 function summeEin(list){ return list.filter(b=>b.istEinnahme && !b.istUeberweisung).reduce((s,b)=>s+b.betrag,0); }
 function summeAus(list){ return list.filter(b=>!b.istEinnahme && !b.istUeberweisung).reduce((s,b)=>s+b.betrag,0); }
 
@@ -655,8 +690,6 @@ function kontoName(kontoId){
 }
 
 /* ---------------------------- HELPERS: KATEGORIEN --------------------------- */
-// Kombiniert die fest eingebauten mit den vom Nutzer selbst angelegten
-// Kategorien (inkl. optionaler Unterkategorien über "eltern").
 function allCats(isIncome){
   const base = isIncome ? KAT_EINNAHMEN : KAT_AUSGABEN;
   const custom = isIncome ? state.data.kategorien.einnahmen : state.data.kategorien.ausgaben;
@@ -712,6 +745,8 @@ function render(){
   else if(state.screen==='register') renderRegister();
   else if(state.screen==='forgot') renderForgot();
   else if(state.screen==='reset-password') renderResetPassword();
+  else if(state.screen==='mfa-challenge') renderMfaChallenge();
+  else if(state.screen==='locked') renderLockScreen();
   else renderApp();
   injectStorageWarning();
 }
@@ -776,6 +811,21 @@ async function doLogin(){
         ? 'Benutzername oder Passwort falsch.'
         : 'Anmeldung fehlgeschlagen: '+error.message;
       return render();
+    }
+    // Prüfen, ob noch ein zweiter Faktor (2FA/TOTP) nötig ist, bevor wir
+    // die App wirklich betreten.
+    const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel){
+      const { data: factors } = await sb.auth.mfa.listFactors();
+      const totp = factors.totp.find(f=>f.status==='verified');
+      if(totp){
+        state.mfaFactorId = totp.id;
+        state.pendingAuthUser = data.user;
+        state.pendingAuthUsername = user;
+        state.mfaError = '';
+        state.screen = 'mfa-challenge';
+        return render();
+      }
     }
     await enterApp(data.user, user);
   }catch(e){
@@ -858,13 +908,8 @@ async function doForgotPassword(){
     const user = document.getElementById('fp-user').value.trim();
     if(!user){ state.forgotError='Bitte Benutzernamen eingeben.'; return render(); }
     const email = await resolveLoginEmail(user);
-    // Absichtlich immer die gleiche Erfolgsmeldung, egal ob der Benutzername
-    // existiert oder eine E-Mail hinterlegt ist — verhindert, dass jemand
-    // durch Ausprobieren herausfinden kann, welche Benutzernamen es gibt.
     if(email && !email.endsWith('@finanzmanager.local')){
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
-      // Fehler wird dem Nutzer bewusst NICHT angezeigt (kein Informationsleck),
-      // aber in der Konsole geloggt, damit der Admin es debuggen kann.
       if(error) console.error('resetPasswordForEmail Fehler:', error.message, error);
     } else {
       console.warn('Kein Reset-Mail verschickt: kein Benutzer gefunden oder keine echte E-Mail hinterlegt (Pseudo-Adresse @finanzmanager.local). Aufgelöste Adresse:', email);
@@ -874,7 +919,7 @@ async function doForgotPassword(){
     render();
   }catch(e){
     console.error('Passwort-Reset Fehler:', e);
-    state.forgotDone = true; // gleiche Meldung anzeigen, kein Informationsleck
+    state.forgotDone = true;
     render();
   }
 }
@@ -915,33 +960,267 @@ function renderResetPassword(){
   }
 }
 
-async function enterApp(authUser, username){
+/* ---------------------------- 2FA (TOTP) ------------------------------------ */
+async function submitMfaCode(){
+  const code = document.getElementById('mfa-code').value.trim();
+  if(!/^\d{6}$/.test(code)){ state.mfaError = t('mfaWrongCode'); return render(); }
+  try{
+    const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: state.mfaFactorId });
+    if(chErr){ state.mfaError = chErr.message; return render(); }
+    const { error: vErr } = await sb.auth.mfa.verify({ factorId: state.mfaFactorId, challengeId: challenge.id, code });
+    if(vErr){ state.mfaError = t('mfaWrongCode'); return render(); }
+    await enterApp(state.pendingAuthUser, state.pendingAuthUsername);
+  }catch(e){
+    state.mfaError = isNetworkError(e) ? t('brokenConn') : (e.message||String(e));
+    render();
+  }
+}
+
+function renderMfaChallenge(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-brand"><span class="dot"></span> FinanzManager</div>
+      <div class="login-card">
+        <h1>${t('mfaTitle')}</h1>
+        <p class="sub">${t('mfaDesc')}</p>
+        <div class="err-msg ${state.mfaError?'show':''}">${state.mfaError||''}</div>
+        <div class="field"><label>${t('mfaCode')}</label><input id="mfa-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"/></div>
+        <button class="btn btn-primary" id="mfa-submit">${t('mfaVerify')}</button>
+        <div class="login-switch" style="margin-top:10px;"><b id="mfa-back">${t('backToLogin')}</b></div>
+      </div>
+    </div>`;
+  document.getElementById('mfa-submit').onclick = submitMfaCode;
+  const inp = document.getElementById('mfa-code');
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') submitMfaCode(); });
+  inp.focus();
+  document.getElementById('mfa-back').onclick = async ()=>{ await sb.auth.signOut(); state.screen='login'; render(); };
+}
+
+async function enrollTotp(){
+  try{
+    const { data, error } = await sb.auth.mfa.enroll({ factorType:'totp', friendlyName:'FinanzManager' });
+    if(error){ toast(error.message); return; }
+    openTotpEnrollModal(data);
+  }catch(e){ toast(isNetworkError(e)?t('brokenConn'):(e.message||String(e))); }
+}
+
+function openTotpEnrollModal(factor){
+  const bg = document.createElement('div');
+  bg.className='modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${t('mfaSetupTitle')}</h3>
+      <div class="desc" style="margin-bottom:12px;">${t('mfaSetupDesc')}</div>
+      <div style="text-align:center; margin-bottom:14px;">
+        <img src="${factor.totp.qr_code}" style="width:180px;height:180px;border-radius:10px;background:#fff;padding:8px;"/>
+      </div>
+      <div class="desc" style="text-align:center; word-break:break-all; margin-bottom:14px; font-family:var(--font-num);">${factor.totp.secret}</div>
+      <div class="field"><label>${t('mfaCode')}</label><input id="totp-verify-code" inputmode="numeric" maxlength="6"/></div>
+      <div class="err-msg" id="totp-err"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="totp-cancel">${t('cancel')}</button>
+        <button class="btn btn-primary" id="totp-confirm">${t('mfaVerify')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#totp-cancel').onclick = async ()=>{ await sb.auth.mfa.unenroll({ factorId: factor.id }); bg.remove(); };
+  bg.querySelector('#totp-confirm').onclick = async ()=>{
+    const code = bg.querySelector('#totp-verify-code').value.trim();
+    const errEl = bg.querySelector('#totp-err');
+    try{
+      const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: factor.id });
+      if(chErr){ errEl.textContent = chErr.message; errEl.classList.add('show'); return; }
+      const { error: vErr } = await sb.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code });
+      if(vErr){ errEl.textContent = t('mfaWrongCode'); errEl.classList.add('show'); return; }
+      toast(t('mfaEnabled'));
+      bg.remove(); render();
+    }catch(e){ errEl.textContent = isNetworkError(e)?t('brokenConn'):(e.message||String(e)); errEl.classList.add('show'); }
+  };
+  bg.onclick = e=>{ if(e.target===bg) bg.remove(); };
+}
+
+async function disableTotp(factorId){
+  if(!confirm(t('mfaDisableConfirm'))) return;
+  try{ await sb.auth.mfa.unenroll({ factorId }); toast(t('mfaDisabled')); render(); }
+  catch(e){ toast(isNetworkError(e)?t('brokenConn'):(e.message||String(e))); }
+}
+
+async function loadMfaSection(){
+  const el = document.getElementById('mfa-section');
+  if(!el) return;
+  try{
+    const { data, error } = await sb.auth.mfa.listFactors();
+    if(error){ el.innerHTML = `<div class="desc">${t('mfaLoadError')}</div>`; return; }
+    const verified = data.totp.find(f=>f.status==='verified');
+    el.innerHTML = verified ? `
+      <div class="desc" style="color:var(--green); margin-bottom:10px;">✓ ${t('mfaActive')}</div>
+      <button class="btn btn-danger btn-sm" id="btn-mfa-disable">${t('mfaDisable')}</button>
+    ` : `
+      <div class="desc" style="margin-bottom:10px;">${t('mfaInactive')}</div>
+      <button class="btn btn-primary btn-sm" id="btn-mfa-enroll">${t('mfaEnable')}</button>
+    `;
+    const enrollBtn = document.getElementById('btn-mfa-enroll');
+    if(enrollBtn) enrollBtn.onclick = enrollTotp;
+    const disBtn = document.getElementById('btn-mfa-disable');
+    if(disBtn) disBtn.onclick = ()=> disableTotp(verified.id);
+  }catch(e){ el.innerHTML = `<div class="desc">${isNetworkError(e)?t('brokenConn'):t('mfaLoadError')}</div>`; }
+}
+
+/* ---------------------------- LOGIN-HISTORIE --------------------------------- */
+async function logLoginEvent(userId){
+  try{
+    await sb.from('login_history').insert({
+      user_id: userId,
+      user_agent: navigator.userAgent,
+      language: navigator.language || '',
+      approx_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+    });
+  }catch(e){ console.error('Login-Historie Fehler:', e); }
+}
+function shortenUserAgent(ua){
+  if(!ua) return '?';
+  if(/iphone/i.test(ua)) return '📱 iPhone';
+  if(/ipad/i.test(ua)) return '📱 iPad';
+  if(/android/i.test(ua)) return '📱 Android';
+  if(/macintosh/i.test(ua)) return '💻 Mac';
+  if(/windows/i.test(ua)) return '💻 Windows';
+  if(/linux/i.test(ua)) return '💻 Linux';
+  return '🖥 ' + ua.slice(0,40);
+}
+async function loadLoginHistorySection(){
+  const el = document.getElementById('login-history-section');
+  if(!el) return;
+  try{
+    const { data, error } = await sb.from('login_history').select('*').eq('user_id', state.authId).order('created_at', { ascending:false }).limit(10);
+    if(error){ el.innerHTML = `<div class="desc">${t('loginHistoryError')}</div>`; return; }
+    el.innerHTML = (data&&data.length) ? data.map(l=>`
+      <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:12.5px;">
+        <span>${escapeHtml(shortenUserAgent(l.user_agent))}</span>
+        <span style="color:var(--muted);">${new Date(l.created_at).toLocaleString(state.lang==='en'?'en-US':'de-DE')}</span>
+      </div>`).join('') : `<div class="desc">${t('noLoginHistory')}</div>`;
+  }catch(e){ el.innerHTML = `<div class="desc">${isNetworkError(e)?t('brokenConn'):t('loginHistoryError')}</div>`; }
+}
+
+/* ---------------------------- BIOMETRIE (WebAuthn) --------------------------- */
+function biometricStorageKey(userId){ return 'fm_webauthn_'+userId; }
+function getStoredBiometricCredential(userId){
+  try{ const raw = localStorage.getItem(biometricStorageKey(userId)); return raw ? JSON.parse(raw) : null; }
+  catch(e){ return null; }
+}
+function bufToBase64url(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function base64urlToBuf(b64url){
+  const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/').padEnd(b64url.length + (4 - b64url.length % 4) % 4, '=');
+  const str = atob(b64); const buf = new Uint8Array(str.length);
+  for(let i=0;i<str.length;i++) buf[i] = str.charCodeAt(i);
+  return buf.buffer;
+}
+function biometricSupported(){ return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create); }
+async function biometricPlatformAvailable(){
+  try{ return biometricSupported() && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+  catch(e){ return false; }
+}
+async function registerBiometric(){
+  if(!(await biometricPlatformAvailable())){ toast(t('biometricNotSupported')); return; }
+  try{
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const userIdBuf = new TextEncoder().encode(state.authId);
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge, rp:{ name:'FinanzManager' },
+      user:{ id:userIdBuf, name:state.authUsername||'user', displayName:state.displayName||'user' },
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{ authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred' },
+      timeout:60000, attestation:'none'
+    }});
+    localStorage.setItem(biometricStorageKey(state.authId), JSON.stringify({ id: bufToBase64url(cred.rawId) }));
+    state.biometricEnabled = true; persist(); toast(t('biometricSetup')+' ✓'); render();
+  }catch(e){ console.error('Biometrie Fehler:', e); toast(t('biometricFailed')); }
+}
+function removeBiometric(){
+  localStorage.removeItem(biometricStorageKey(state.authId));
+  state.biometricEnabled = false; persist(); render();
+}
+async function doBiometricUnlock(){
+  state.lockError = '';
+  const stored = getStoredBiometricCredential(state.authId);
+  if(!stored){ state.lockError = t('biometricFailed'); return render(); }
+  try{
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    await navigator.credentials.get({ publicKey:{
+      challenge, allowCredentials:[{ id: base64urlToBuf(stored.id), type:'public-key' }],
+      userVerification:'required', timeout:60000
+    }});
+    state.screen = 'app'; render();
+  }catch(e){ console.error('Biometrie Fehler:', e); state.lockError = t('biometricFailed'); render(); }
+}
+function renderLockScreen(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-brand"><span class="dot"></span> FinanzManager</div>
+      <div class="login-card" style="text-align:center;">
+        <div class="sb-avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 18px;${state.avatarUrl?`background-image:url('${state.avatarUrl}');background-size:cover;background-position:center;`:''}">${state.avatarUrl?'':(state.displayName||'?').slice(0,1).toUpperCase()}</div>
+        <h1>${escapeHtml(state.displayName)}</h1>
+        <p class="sub">${t('biometricPrompt')}</p>
+        <div class="err-msg ${state.lockError?'show':''}">${state.lockError||''}</div>
+        <button class="btn btn-primary" id="lock-unlock">🔒 ${t('biometricUnlock')}</button>
+        <div class="login-switch" style="margin-top:14px;"><b id="lock-password">${t('usePassword')}</b></div>
+      </div>
+    </div>`;
+  document.getElementById('lock-unlock').onclick = doBiometricUnlock;
+  document.getElementById('lock-password').onclick = async ()=>{ await sb.auth.signOut(); state.screen='login'; state.data=emptyUserData(); render(); };
+}
+
+/* ---------------------------- AUTO-LOGOUT (Inaktivität) ---------------------- */
+let __inactivityTimer = null;
+function resetInactivityTimer(){
+  clearTimeout(__inactivityTimer);
+  if(state.screen !== 'app' || !state.autoLogoutMinutes) return;
+  __inactivityTimer = setTimeout(handleInactivityTimeout, state.autoLogoutMinutes*60*1000);
+}
+function handleInactivityTimeout(){
+  if(state.screen !== 'app') return;
+  document.querySelectorAll('.modal-bg').forEach(m=>m.remove());
+  closeSidebar(); closeFabMenu();
+  const hasBiometric = state.biometricEnabled && getStoredBiometricCredential(state.authId);
+  if(hasBiometric){ state.screen='locked'; state.lockError=''; render(); }
+  else { doLogout(); }
+}
+['mousemove','keydown','touchstart','scroll','click'].forEach(evt=>{
+  window.addEventListener(evt, resetInactivityTimer, { passive:true });
+});
+
+async function enterApp(authUser, username, logEvent){
+  if(logEvent===undefined) logEvent = true;
   state.authId = authUser.id;
   state.authUsername = username || (authUser.user_metadata && authUser.user_metadata.username) || authUser.email.split('@')[0];
   state.displayName = (authUser.user_metadata && authUser.user_metadata.display_name) || state.authUsername;
   state.avatarUrl = (authUser.user_metadata && authUser.user_metadata.avatar_url) || null;
-  state.dataOwnerId = authUser.id; // kann später auf einen Haushalts-Besitzer umgeschaltet werden
+  state.dataOwnerId = authUser.id;
   let data = await Store.getUserData(state.dataOwnerId);
   if(!data) data = migrateData(emptyUserData());
   if(!data.settings) data.settings = {theme:'dark', lang:'de'};
   state.data = data;
   state.theme = data.settings.theme || 'dark';
   state.lang = data.settings.lang || 'de';
-  state.autoCategorize = data.settings.autoCategorize !== false; // Standard: an
+  state.autoCategorize = data.settings.autoCategorize !== false;
   state.currency = data.settings.currency || 'EUR';
   state.notificationsEnabled = !!data.settings.notificationsEnabled;
+  state.biometricEnabled = !!data.settings.biometricEnabled;
+  state.autoLogoutMinutes = data.settings.autoLogoutMinutes ?? 15;
   state.plan = await Store.getPlan(authUser.id);
-  state.screen = 'app';
+  if(logEvent) logLoginEvent(authUser.id);
+  const bioCred = getStoredBiometricCredential(state.authId);
+  state.screen = (state.biometricEnabled && bioCred) ? 'locked' : 'app';
   state.tab = 'dashboard';
   state.loginError=''; state.regError='';
   render();
-  // Falls beim Laden alte Daten automatisch migriert wurden (z.B. Standard-
-  // konto neu angelegt), das einmal direkt speichern statt zu warten, bis
-  // der Nutzer selbst etwas ändert.
   if(data.__migrated) persist();
+  resetInactivityTimer();
 }
 
 async function doLogout(){
+  clearTimeout(__inactivityTimer);
   await sb.auth.signOut();
   state.screen='login'; state.authId=null; state.dataOwnerId=null; state.authUsername=null; state.data=emptyUserData();
   state.plan='free'; state.currency='EUR'; state.householdMode=false; state.dataOwnerSettings=null;
@@ -956,7 +1235,7 @@ async function switchToHousehold(ownerId, ownerName){
   state.dataOwnerId = ownerId;
   state.householdMode = true;
   state.householdOwnerName = ownerName;
-  state.dataOwnerSettings = migrated.settings; // eigene Theme/Sprache/Währung bleiben unverändert
+  state.dataOwnerSettings = migrated.settings;
   state.data = migrated;
   state.tab = 'dashboard';
   render();
@@ -1025,8 +1304,6 @@ function renderApp(){
   document.getElementById('btn-logout').onclick = doLogout;
   document.getElementById('sidebar-backdrop').onclick = closeSidebar;
 
-  // Bottom-Nav (nur auf Mobile sichtbar): die 4 wichtigsten Tabs direkt
-  // erreichbar, "Mehr" öffnet die vollständige Seitenleiste als Drawer.
   const bnItems = [
     ['dashboard', ICO.dashboard, t('dashboard')],
     ['konten', ICO.konten, t('accounts')],
@@ -1045,8 +1322,6 @@ function renderApp(){
     };
   });
 
-  // Schnell-hinzufügen (FAB): auf allen Tabs erreichbar, öffnet direkt das
-  // Einnahme/Ausgabe-Formular, ohne erst zum passenden Tab wechseln zu müssen.
   document.getElementById('fab-main').onclick = toggleFabMenu;
   document.getElementById('fab-income').onclick = ()=>{ closeFabMenu(); openTxModal(true); };
   document.getElementById('fab-expense').onclick = ()=>{ closeFabMenu(); openTxModal(false); };
@@ -1193,7 +1468,6 @@ function renderKonten(c){
 }
 
 function openKontoModal(existing){
-  // Free-Plan: begrenzte Anzahl Konten (Pro-Feature: unbegrenzt)
   if(!existing && !isPro() && state.data.konten.length>=FREE_KONTEN_LIMIT){
     toast(t('accountLimitReached'));
     return;
@@ -1288,7 +1562,6 @@ function openTransferModal(){
 
 /* ---------------------------- BUDGET ---------------------------------------- */
 function budgetsFuerMonat(){
-  // Ausgaben je Kategorie im aktiven Monat (Überweisungen zählen nicht mit)
   const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
   const spentByCat = {};
   buf.forEach(b=> spentByCat[b.kategorie] = (spentByCat[b.kategorie]||0)+b.betrag);
@@ -1443,9 +1716,6 @@ function openBudgetModal(existing){
   };
 }
 
-// Schlägt Budgets vor, indem der Durchschnitts-Verbrauch der letzten 3 Monate
-// je Kategorie (ohne bereits budgetierte Kategorien) berechnet wird — auf
-// ca. 5 € aufgerundet und mit 10% Puffer, damit es kein knapper Deckel ist.
 function suggestBudgets(){
   const usedCats = new Set(state.data.budgets.kategorien.map(x=>x.kategorie));
   const sums = {};
@@ -1481,7 +1751,6 @@ function buildNotifications(){
   const mel = [];
   if(ein>0 && aus>ein) mel.push({icon:'🚨', text:(state.lang==='en'?'Expenses exceed income by ':'Ausgaben übersteigen Einnahmen um ')+fmt(aus-ein), level:'RED'});
   else if(ein>0 && aus>ein*0.9) mel.push({icon:'⚠', text:(state.lang==='en'?'Expenses close to income: ':'Ausgaben nahe an Einnahmen: ')+fmt(aus)+' / '+fmt(ein), level:'AMBER'});
-  // Budget-Warnungen
   const { spentByCat, gesamtAusgegeben } = budgetsFuerMonat();
   const bd = state.data.budgets;
   if(bd.gesamt!=null){
@@ -1514,11 +1783,6 @@ function buildNotifications(){
   return mel;
 }
 
-// Zeigt echte Browser-Benachrichtigungen (OS-Ebene) für die dringendsten
-// (RED) Hinweise — nur wenn der Nutzer das explizit erlaubt hat UND die
-// Berechtigung im Browser erteilt wurde. Merkt sich pro Sitzung, welche
-// Texte schon gezeigt wurden, damit nicht bei jedem Re-Render dieselbe
-// Meldung erneut aufploppt.
 const __shownNotifications = new Set();
 function maybeShowBrowserNotifications(notifs){
   if(!state.notificationsEnabled) return;
@@ -1537,7 +1801,6 @@ function renderDashboard(c){
   const bilanz = ein-aus;
   const sparquote = ein>0 ? ((ein-aus)/ein*100) : 0;
 
-  // Kategorie-Aufschlüsselung für Ausgaben- UND Einnahmen-Diagramm — Überweisungen zählen nicht mit
   const katMapAus = {};
   buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMapAus[b.kategorie] = (katMapAus[b.kategorie]||0)+b.betrag);
   const katEntriesAus = Object.entries(katMapAus).sort((a,b)=>b[1]-a[1]);
@@ -1546,7 +1809,6 @@ function renderDashboard(c){
   buf.filter(b=>b.istEinnahme && !b.istUeberweisung).forEach(b=> katMapEin[b.kategorie] = (katMapEin[b.kategorie]||0)+b.betrag);
   const katEntriesEin = Object.entries(katMapEin).sort((a,b)=>b[1]-a[1]);
 
-  // 6-Monats-Trend
   const trend = [];
   for(let i=5;i>=0;i--){
     let m = state.aktiverMonat - i, y = state.aktivesJahr;
@@ -1555,7 +1817,6 @@ function renderDashboard(c){
     trend.push({m,y, ein:summeEin(list), aus:summeAus(list)});
   }
 
-  // Jahresübersicht: alle 12 Monate des aktiven Jahres
   const jahresDaten = [];
   for(let m=1;m<=12;m++){
     const list = state.data.buchungen.filter(b=>{ const d=new Date(b.datum); return d.getFullYear()===state.aktivesJahr && (d.getMonth()+1)===m; });
@@ -1564,7 +1825,6 @@ function renderDashboard(c){
   const jahrEin = jahresDaten.reduce((s,x)=>s+x.ein,0);
   const jahrAus = jahresDaten.reduce((s,x)=>s+x.aus,0);
 
-  // Vergleich mit Vormonat & Vorjahr (gleicher Monat)
   let vormM = state.aktiverMonat-1, vormJ = state.aktivesJahr;
   if(vormM<1){ vormM=12; vormJ--; }
   const vormBuf = state.data.buchungen.filter(b=>{ const d=new Date(b.datum); return d.getFullYear()===vormJ && (d.getMonth()+1)===vormM; });
@@ -1581,7 +1841,6 @@ function renderDashboard(c){
   const ausVsVormonat = delta(aus, vormAus);
   const ausVsVorjahr = delta(aus, vorjAus);
 
-  // Größte Ausgaben (Einzelbuchungen) & Durchschnittliche Ausgabe pro Buchung
   const ausgabenListe = buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).sort((a,b)=>b.betrag-a.betrag);
   const topAusgaben = ausgabenListe.slice(0,5);
   const avgAusgabe = ausgabenListe.length ? aus/ausgabenListe.length : 0;
@@ -1593,7 +1852,7 @@ function renderDashboard(c){
   function deltaBadge(d){
     if(!d) return '';
     if(d.pct==null) return `<span style="font-size:11px; color:var(--muted);">${state.lang==='en'?'no data last time':'keine Vergleichsdaten'}</span>`;
-    const col = d.up ? 'var(--red)' : 'var(--green)'; // bei Ausgaben ist "mehr" schlecht
+    const col = d.up ? 'var(--red)' : 'var(--green)';
     const arrow = d.up ? '↑' : '↓';
     return `<span style="font-size:11px; font-weight:700; color:${col};">${arrow} ${Math.abs(d.pct).toFixed(0)}%</span>`;
   }
@@ -1715,7 +1974,6 @@ function donutChart(entries){
   </div>`;
 }
 
-// Jahresübersicht: 12 gruppierte Balken (Einnahmen/Ausgaben) für das aktive Jahr
 function yearChart(jahresDaten){
   const W=280,H=140,PAD=8,BOTTOM=20;
   const maxV = Math.max(1, ...jahresDaten.map(x=>Math.max(x.ein,x.aus)));
@@ -1892,8 +2150,6 @@ function renderTxTab(c, isIncome){
   wireTxList(c);
 }
 
-// Gemeinsame Verkabelung für alle Stellen, die txList() einsetzen (Dashboard,
-// Einnahmen/Ausgaben-Tab, "Größte Ausgaben" …) — Löschen- und Beleg-Button.
 function wireTxList(c){
   c.querySelectorAll('.tx-del').forEach(btn=>{
     btn.onclick = ()=>{
@@ -1909,7 +2165,7 @@ function wireTxList(c){
 function openTxModal(isIncome){
   const cats = allCats(isIncome);
   let selectedCat = cats[0].key;
-  let userPickedCat = false; // sobald der Nutzer manuell klickt, nicht mehr automatisch überschreiben
+  let userPickedCat = false;
   let selectedKonto = state.data.konten[0]?.id;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
@@ -1966,11 +2222,6 @@ function openTxModal(isIncome){
 
 /* ---------------------------- SAVINGS GOALS --------------------------------- */
 /* ---------------------------- GAMIFICATION ---------------------------------- */
-// Sparstreak: Anzahl aufeinanderfolgender ABGESCHLOSSENER Monate (rückwärts ab
-// dem aktuellen Kalendermonat, nicht dem im Dashboard angezeigten Monat) mit
-// positivem Saldo (Einnahmen ≥ Ausgaben). Der laufende Monat zählt nur mit,
-// wenn er schon selbst im Plus ist; ein Monat ganz ohne Buchungen bricht den
-// Streak (kein "stiller" Fortbestand ohne echte Aktivität).
 function computeStreak(){
   const heute = new Date();
   let m = heute.getMonth()+1, y = heute.getFullYear();
@@ -2333,7 +2584,6 @@ function renderRecurring(c){
   const list = [...state.data.wiederkehrend].sort((a,b)=>a.naechstesFaellig.localeCompare(b.naechstesFaellig));
   const heute = new Date();
 
-  // "Du zahlst X€/Monat für Abos" — Ausgaben-Abos auf Monatsbasis normalisiert
   const ausgabenAbos = state.data.wiederkehrend.filter(w=>!w.istEinnahme);
   const proMonat = ausgabenAbos.reduce((s,w)=> s + (w.intervall==='jaehrlich' ? w.betrag/12 : w.betrag), 0);
   const proJahr = ausgabenAbos.reduce((s,w)=> s + (w.intervall==='jaehrlich' ? w.betrag : w.betrag*12), 0);
@@ -2572,10 +2822,6 @@ function generateAITips(buf, ein, aus, spar, bilanz){
   return tips;
 }
 
-// Erkennung ungewöhnlich hoher Ausgaben: vergleicht jede Buchung des aktuellen
-// Monats mit dem historischen Durchschnitt (letzte 6 Monate) ihrer Kategorie.
-// Braucht mind. 2 historische Buchungen in der Kategorie, um Zufallstreffer
-// bei brandneuen Kategorien zu vermeiden.
 function detectAnomalies(){
   const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
   const historyByCat = {};
@@ -2603,9 +2849,6 @@ function detectAnomalies(){
   return anomalies.sort((a,b)=>b.faktor-a.faktor).slice(0,5);
 }
 
-// "Wie kann ich X€ im Monat sparen?" — schlägt vor, die größten Ausgaben-
-// Kategorien anteilig zu kürzen (max. 40% pro Kategorie, damit es realistisch
-// bleibt), bis das Ziel erreicht ist oder alle Kategorien ausgeschöpft sind.
 function computeSavingsPlan(target){
   const buf = gefilterteBuchungen().filter(b=>!b.istEinnahme && !b.istUeberweisung);
   const katMap = {};
@@ -2804,6 +3047,16 @@ function renderSettings(c){
       ${!isPro() ? `<button class="btn btn-primary btn-sm" id="btn-upgrade">⭐ ${t('upgradeNow')}</button>` : ''}
     </div>
     <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:6px;">🔐 ${t('twoFactor')}</h3>
+      <div class="desc" style="margin-bottom:12px;">${t('twoFactorDesc')}</div>
+      <div id="mfa-section"><div class="desc">${t('loading')}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:6px;">📜 ${t('loginHistory')}</h3>
+      <div class="desc" style="margin-bottom:12px;">${t('loginHistoryDesc')}</div>
+      <div id="login-history-section"><div class="desc">${t('loading')}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
       <div class="settings-row">
         <div><div class="lbl">${t('theme')}</div><div class="desc">${state.lang==='en'?'Choose your visual style':'Wähle dein Design'}</div></div>
         <div class="seg" id="theme-seg" style="width:220px;">
@@ -2823,6 +3076,19 @@ function renderSettings(c){
       <div class="settings-row">
         <div><div class="lbl">${t('changePassword')}</div><div class="desc">${state.lang==='en'?'Set a new password':state.lang==='ar'?'تعيين كلمة مرور جديدة':'Neues Passwort für dein Konto setzen'}</div></div>
         <button class="btn btn-ghost btn-sm" id="btn-change-pw">${t('changePassword')}</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">🔐 ${t('biometricLock')}</div><div class="desc">${t('biometricDesc')}</div></div>
+        <button class="btn btn-ghost btn-sm" id="btn-biometric">${getStoredBiometricCredential(state.authId) ? t('biometricRemove') : t('biometricSetup')}</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="lbl">${t('autoLogout')}</div><div class="desc">${t('autoLogoutDesc')}</div></div>
+        <select id="autologout-sel" style="background:var(--surface2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:8px 10px; font-size:12.5px;">
+          <option value="0" ${state.autoLogoutMinutes===0?'selected':''}>${t('autoLogoutOff')}</option>
+          <option value="5" ${state.autoLogoutMinutes===5?'selected':''}>${t('autoLogoutMin5')}</option>
+          <option value="15" ${state.autoLogoutMinutes===15?'selected':''}>${t('autoLogoutMin15')}</option>
+          <option value="30" ${state.autoLogoutMinutes===30?'selected':''}>${t('autoLogoutMin30')}</option>
+        </select>
       </div>
       <div class="settings-row">
         <div><div class="lbl">${t('browserNotifications')}</div><div class="desc">${t('browserNotificationsDesc')}</div></div>
@@ -2902,6 +3168,10 @@ function renderSettings(c){
       persist(); render();
     };
   });
+  document.getElementById('autologout-sel').onchange = e=>{
+    state.autoLogoutMinutes = parseInt(e.target.value,10);
+    persist(); resetInactivityTimer(); toast(t('save'));
+  };
   document.getElementById('btn-change-pw').onclick = openChangePasswordModal;
   document.getElementById('profile-avatar').onclick = ()=> document.getElementById('avatar-file').click();
   document.getElementById('avatar-file').addEventListener('change', uploadAvatar);
@@ -2912,9 +3182,13 @@ function renderSettings(c){
   document.getElementById('file-import').addEventListener('change', importCsv);
   const upBtn = document.getElementById('btn-upgrade');
   if(upBtn) upBtn.onclick = ()=> toast(t('upgradeComingSoon'));
+  const bioBtn = document.getElementById('btn-biometric');
+  if(bioBtn) bioBtn.onclick = ()=> getStoredBiometricCredential(state.authId) ? removeBiometric() : registerBiometric();
   renderCategoryManager();
   document.getElementById('btn-add-cat').onclick = openCategoryModal;
   loadHouseholdSection();
+  loadMfaSection();
+  loadLoginHistorySection();
   document.getElementById('btn-del-account').onclick = async ()=>{
     if(!confirm(state.lang==='en'
       ? 'Really delete all your data? This cannot be undone. (Your login itself stays; contact the site admin to remove it entirely.)'
@@ -2954,8 +3228,6 @@ async function uploadAvatar(ev){
     const { error: upErr } = await sb.storage.from('avatars').upload(path, file, { upsert:true, cacheControl:'3600' });
     if(upErr){ console.error('Avatar-Upload Fehler:', upErr); toast(t('avatarUploadError')); return; }
     const { data } = sb.storage.from('avatars').getPublicUrl(path);
-    // Cache-Buster anhängen, damit das neue Bild sofort sichtbar wird statt
-    // einer evtl. vom Browser gecachten alten Version unter derselben URL.
     const url = data.publicUrl + '?t=' + Date.now();
     state.avatarUrl = url;
     await sb.auth.updateUser({ data: { avatar_url: url } });
@@ -3136,7 +3408,7 @@ function openCategoryModal(){
     const icon = bg.querySelector('#c-icon').value.trim() || '💠';
     const eltern = bg.querySelector('#c-parent').value || null;
     if(!name){ toast(t('fillAllFields')); return; }
-    const key = name; // Kategorie-Schlüssel = eingegebener Name (muss je Typ eindeutig sein)
+    const key = name;
     const list = isIncome ? state.data.kategorien.einnahmen : state.data.kategorien.ausgaben;
     if([...allCats(isIncome)].some(k=>k.key.toLowerCase()===key.toLowerCase())){
       toast(t('categoryExists')); return;
@@ -3231,14 +3503,12 @@ function generateMonthlyReportPdf(){
   const sparquote = ein>0 ? ((ein-aus)/ein*100) : 0;
   const monLabel = monateFor(state.lang)[state.aktiverMonat-1] + ' ' + state.aktivesJahr;
 
-  // --- Kopf ---
   doc.setFont(undefined,'bold'); doc.setFontSize(18); doc.setTextColor(20,26,51);
   doc.text('FinanzManager', marginX, y); y += 8;
   doc.setFont(undefined,'normal'); doc.setFontSize(11); doc.setTextColor(90,98,130);
   doc.text(`${t('transactions')} — ${monLabel}`, marginX, y); y += 5;
   doc.text(`${state.displayName || ''}`, marginX, y); y += 10;
 
-  // --- Kennzahlen ---
   sectionTitle(state.lang==='en' ? 'Summary' : 'Übersicht');
   tableRow([t('totalIncome'), fmt(ein)], [90,90]);
   tableRow([t('totalExpenses'), fmt(aus)], [90,90]);
@@ -3246,7 +3516,6 @@ function generateMonthlyReportPdf(){
   tableRow([t('savingsRate'), sparquote.toFixed(1)+'%'], [90,90]);
   y += 4;
 
-  // --- Ausgaben nach Kategorie ---
   const katMap = {};
   buf.filter(b=>!b.istEinnahme && !b.istUeberweisung).forEach(b=> katMap[b.kategorie]=(katMap[b.kategorie]||0)+b.betrag);
   const katEntries = Object.entries(katMap).sort((a,b)=>b[1]-a[1]);
@@ -3259,7 +3528,6 @@ function generateMonthlyReportPdf(){
     y += 4;
   }
 
-  // --- Budget-Status ---
   const bd = state.data.budgets;
   if(bd.gesamt!=null || bd.kategorien.length){
     sectionTitle(t('budgetTab'));
@@ -3275,14 +3543,12 @@ function generateMonthlyReportPdf(){
     y += 4;
   }
 
-  // --- Konten ---
   sectionTitle(t('accounts'));
   tableRow([t('account'), t('totalBalance')], [110,70], { bold:true });
   state.data.konten.forEach(k=> tableRow([k.name, fmt(kontoSaldo(k.id))], [110,70]));
   tableRow([t('totalBalance'), fmt(gesamtSaldo())], [110,70], { bold:true });
   y += 4;
 
-  // --- Abos / wiederkehrend ---
   if(state.data.wiederkehrend.length){
     sectionTitle(t('recurring'));
     tableRow([t('description'), t('amount'), t('interval'), t('nextDue')], [60,40,35,45], { bold:true });
@@ -3292,7 +3558,6 @@ function generateMonthlyReportPdf(){
     y += 4;
   }
 
-  // --- Buchungen dieses Monats ---
   if(buf.length){
     sectionTitle(t('transactions'));
     tableRow([t('date'), t('description'), t('category'), t('amount')], [26,70,50,34], { bold:true });
@@ -3306,7 +3571,6 @@ function generateMonthlyReportPdf(){
     }
   }
 
-  // --- Fußzeile auf jeder Seite ---
   const pageCount = doc.internal.getNumberOfPages();
   for(let p=1;p<=pageCount;p++){
     doc.setPage(p);
@@ -3317,8 +3581,6 @@ function generateMonthlyReportPdf(){
   doc.save(`finanzmanager_bericht_${state.aktivesJahr}-${String(state.aktiverMonat).padStart(2,'0')}.pdf`);
 }
 
-// Sehr simpler CSV-Parser passend zum Export-Format oben (Semikolon-getrennt,
-// Felder in doppelten Anführungszeichen, "" als Escape für ein Anführungszeichen).
 function parseCsvLine(line, delim){
   delim = delim || ';';
   const out = []; let cur=''; let inQ=false;
@@ -3339,10 +3601,6 @@ function parseCsvLine(line, delim){
 }
 
 /* ---------------------------- KONTOAUSZUG-IMPORT (Sparkasse/VR/Revolut/generisch) --- */
-// Liest eine Datei als Text — versucht zuerst UTF-8, erkennt typische
-// "Mojibake"-Zeichen (falsch dekodierte Umlaute wie "Ã¤" statt "ä", wie sie
-// bei deutschen Bank-Exporten in ISO-8859-1/Windows-1252 häufig vorkommen)
-// und liest bei Bedarf mit der richtigen Kodierung neu ein.
 function readFileSmart(file){
   return new Promise((resolve,reject)=>{
     const r1 = new FileReader();
@@ -3372,14 +3630,12 @@ function parseDelimited(text, delim){
   return text.replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n').filter(l=>l.trim().length).map(l=>parseCsvLine(l, delim));
 }
 
-// Deutsches Zahlenformat: "1.234,56" oder "-12,50" → 1234.56 / -12.5
 function parseAmountDE(s){
   return parseFloat(String(s).trim().replace(/\./g,'').replace(',','.'));
 }
 function parseAmountUS(s){
   return parseFloat(String(s).trim().replace(/,/g,''));
 }
-// Datum in verschiedenen Formaten → ISO (YYYY-MM-DD)
 function parseDateFlexible(s, fmt){
   s = String(s).trim();
   let m;
@@ -3395,15 +3651,9 @@ function parseDateFlexible(s, fmt){
     let [,mo,d,y] = m; if(y.length===2) y = (Number(y)<70?'20':'19')+y;
     return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
   }
-  return todayISO(); // Fallback, falls das Format doch nicht passt
+  return todayISO();
 }
 
-// Bekannte Bank-Exportformate anhand der Kopfzeile erkennen. Deckt Sparkasse
-// und Volksbank/VR-Banken ab (beide nutzen dasselbe Kernbanken-Exportformat)
-// sowie Revolut. Alles andere läuft über die manuelle Spalten-Zuordnung.
-// Automatische Spalten-Erkennung anhand der Kopfzeile — deckt neben festen
-// Bank-Templates auch generische CSVs mit klar benannten Spalten ab (z.B.
-// "Datum", "Betrag", "Beschreibung"), egal welche Bank/App sie exportiert hat.
 function guessColumnByKeywords(headers, keywords){
   const h = headers.map(x=>String(x).toLowerCase().trim());
   for(const kw of keywords){
@@ -3417,9 +3667,6 @@ function guessColumnByKeywords(headers, keywords){
   return -1;
 }
 
-// Datumsformat NICHT vom Nutzer erraten lassen, sondern aus echten
-// Beispielwerten der gewählten Spalte ableiten — verhindert genau den
-// Fehler "Tag und Monat vertauscht", der bei Handauswahl leicht passiert.
 function guessDateFormat(sampleValues){
   for(const v of sampleValues){
     const s = String(v).trim();
@@ -3427,16 +3674,13 @@ function guessDateFormat(sampleValues){
     if(/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)) return 'mdy';
     if(/^\d{1,2}\.\d{1,2}\.\d{2,4}/.test(s)){
       const m = s.match(/^(\d{1,2})\.(\d{1,2})\./);
-      if(m && Number(m[1])>12) return 'dmy'; // Tag > 12 → kann nur TT.MM sein, eindeutig
-      return 'dmy'; // TT.MM.JJJJ ist im deutschsprachigen Raum die weit überwiegende Konvention
+      if(m && Number(m[1])>12) return 'dmy';
+      return 'dmy';
     }
   }
   return 'dmy';
 }
 
-// Zahlenformat aus echten Beispielwerten ableiten statt zu raten: das letzte
-// Trennzeichen (Komma oder Punkt) im Wert ist so gut wie immer das
-// Dezimaltrennzeichen.
 function guessAmountFormat(sampleValues){
   for(const v of sampleValues){
     const s = String(v).trim();
@@ -3467,7 +3711,7 @@ function detectBankTemplate(headers){
       descCol: h.indexOf('description'),
       amountCol: h.indexOf('amount'),
       dateFmt: 'ymd', amountFmt: 'us',
-      stateCol: h.indexOf('state') // nur COMPLETED-Zeilen importieren
+      stateCol: h.indexOf('state')
     };
   }
   return null;
@@ -3519,9 +3763,6 @@ function renderBankImportMapping(bg, headers, dataRows, template){
   if(template){
     mapping = { dateCol: template.dateCol, descCol: template.descCol, amountCol: template.amountCol, dateFmt: template.dateFmt, amountFmt: template.amountFmt, stateCol: template.stateCol };
   } else {
-    // Kein festes Bank-Template erkannt → Spalten anhand der Kopfzeile raten
-    // und Datums-/Zahlenformat aus echten Beispielwerten ableiten, statt
-    // unsichere Standardwerte (z.B. "letzte Spalte") zu verwenden.
     const dateCol = Math.max(0, guessColumnByKeywords(headers, ['datum','date','buchungstag','tag']));
     const descCol = Math.max(0, guessColumnByKeywords(headers, ['beschreibung','description','verwendungszweck','buchungstext','text','empfänger','empfaenger']));
     let amountCol = guessColumnByKeywords(headers, ['betrag','amount','umsatz','summe']);
@@ -3621,7 +3862,6 @@ function renderBankImportMapping(bg, headers, dataRows, template){
   }
   render();
 
-  // Aktions-Buttons im Footer austauschen (Zurück + Importieren statt nur Schließen)
   const actions = bg.querySelector('.modal-actions');
   actions.innerHTML = `
     <button class="btn btn-ghost" id="bi-back">${t('cancel')}</button>
@@ -3662,7 +3902,6 @@ function importCsv(ev){
       const text = reader.result.replace(/\r/g,'');
       const lines = text.split('\n').filter(l=>l.trim().length);
       if(lines.length<2) throw new Error('empty');
-      // erste Zeile ist die Kopfzeile (Datum;Beschreibung;Betrag;Kategorie;Notiz;IstEinnahme[;Konto]) — wird übersprungen
       const defaultKontoId = state.data.konten[0]?.id;
       let importedCount = 0;
       for(let i=1;i<lines.length;i++){
@@ -3672,7 +3911,6 @@ function importCsv(ev){
         const betrag = parseFloat(String(betragRaw).replace(',','.'));
         if(!datum || !beschreibung || isNaN(betrag)) continue;
         const istEinnahme = String(istEinnahmeRaw).trim().toLowerCase()==='true';
-        // Konto anhand des Namens wiederfinden (falls Spalte vorhanden), sonst Standardkonto
         let kontoId = defaultKontoId;
         if(kontoNameRaw){
           const match = state.data.konten.find(k=>k.name.toLowerCase()===String(kontoNameRaw).trim().toLowerCase());
@@ -3717,19 +3955,12 @@ function injectStorageWarning(){
 }
 
 /* ---------------------------- BOOTSTRAP --------------------------------------- */
-// Ein Klick auf den Reset-Link in der E-Mail loggt den Nutzer technisch ein
-// (Supabase braucht das, um das Passwort ändern zu dürfen) — das darf aber
-// NICHT dazu führen, dass er direkt in der App landet, sondern er soll erst
-// den "Neues Passwort setzen"-Screen sehen. Deshalb erkennen wir den
-// Recovery-Link schon an der URL und überspringen den normalen Auto-Login.
 const isRecoveryLink = /type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search);
 
 sb.auth.onAuthStateChange((event)=>{
   if(event === 'PASSWORD_RECOVERY'){
     state.screen = 'reset-password';
     state.resetDone = false; state.resetError='';
-    // Token aus der Adresszeile entfernen, damit er nicht sichtbar/wieder-
-    // verwendbar in der Browser-Historie oder beim Neuladen hängen bleibt.
     history.replaceState(null, '', window.location.pathname);
     render();
   }
@@ -3740,21 +3971,14 @@ sb.auth.onAuthStateChange((event)=>{
   root.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;">Lädt…</div>`;
 
   if(isRecoveryLink){
-    // Der onAuthStateChange-Listener oben zeigt gleich den Reset-Screen an,
-    // sobald Supabase den Link verarbeitet hat. Falls das aus irgendeinem
-    // Grund nicht passiert (z.B. Link schon benutzt/abgelaufen), nach ein
-    // paar Sekunden trotzdem zum normalen Login zurückfallen, statt ewig
-    // auf "Lädt…" hängen zu bleiben.
     setTimeout(()=>{ if(state.screen!=='reset-password') render(); }, 4000);
     return;
   }
 
   try{
-    // Bereits eingeloggte Sitzung wiederherstellen (Supabase merkt sich das
-    // Auth-Token selbst im Browser) — spart erneutes Einloggen bei Reload.
     const { data: { session } } = await sb.auth.getSession();
     if(session && session.user){
-      await enterApp(session.user, session.user.user_metadata?.username);
+      await enterApp(session.user, session.user.user_metadata?.username, false);
       return;
     }
   }catch(e){

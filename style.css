@@ -82,6 +82,12 @@ a{color:inherit;}
   border-radius:10px; padding:11px 13px; font-size:14px; outline:none; transition:border-color .15s;
 }
 .field input:focus, .field select:focus{border-color:var(--accent);}
+/* Standalone-Eingabefeld-Klasse (z.B. Open-Banking-Modal) außerhalb von .field */
+.input{
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--fg);
+  border-radius:10px; padding:11px 13px; font-size:14px; outline:none; transition:border-color .15s;
+}
+.input:focus{border-color:var(--accent);}
 .btn{
   border:none; border-radius:11px; padding:11px 16px; font-size:14px; font-weight:600;
   display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:filter .15s, transform .1s;

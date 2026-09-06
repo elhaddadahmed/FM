@@ -53,7 +53,7 @@
 (function waitForSupabase() {
   if (window.supabase && window.__supabaseReady !== false) {
     var s = document.createElement("script");
-    s.src = "./app.js";
+    s.src = "./script.js";
     s.onload = function(){
       var ob = document.createElement("script");
       ob.src = "./open-banking.js";

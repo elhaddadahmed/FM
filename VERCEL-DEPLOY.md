@@ -9,27 +9,17 @@
 
 Enthalten:
 - index.html
-- script.js
+- app.js
 - style.css
 - supabase-config.js
 - schema.sql
-- open-banking.js
-- open-banking-schema.sql
-- OPEN-BANKING-SETUP.md
 - README.md
 - vercel.json
-
-⚠️ **Wichtig**: `open-banking.js` wird von `index.html` aktiv nachgeladen
-(nach `script.js`). Fehlt die Datei beim Deploy, bekommst du beim Klick auf
-"Bank verbinden" einen Fehler ("openOpenBankingModal is not defined"), weil
-die Funktion dann nirgends definiert ist.
+- favicon.ico
+- manifest.json
+- icons/ (logo.svg, icon-16.png, icon-32.png, icon-180.png, icon-192.png, icon-512.png)
 
 Wichtig:
-- In Supabase zuerst `schema.sql` **vollständig** im SQL Editor ausführen
-  (legt jetzt auch die Storage-Buckets `receipts`/`avatars` inkl. Regeln
-  automatisch an — dafür musst du nichts mehr manuell im Dashboard anlegen).
-- Danach zusätzlich `open-banking-schema.sql` ausführen.
+- In Supabase zuerst `schema.sql` vollständig im SQL Editor ausführen.
+- Die Buckets `receipts` (privat) und `avatars` (öffentlich) anlegen.
 - Die aktuelle `sb_publishable_...` Client-Key-Variante ist für Browser-Apps geeignet.
-- Für Open Banking: `GOCARDLESS_SECRET_ID` und `GOCARDLESS_SECRET_KEY` als
-  Supabase Edge Function Secrets setzen (siehe OPEN-BANKING-SETUP.md) und
-  `supabase functions deploy open-banking` ausführen.

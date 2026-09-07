@@ -1,76 +1,45 @@
-# FinanzManager — mit echter Datenbank (Supabase)
+# FinanzManager — Setup
 
-Diese Version speichert nicht mehr im Browser (`localStorage`), sondern in
-einer **echten Postgres-Datenbank bei Supabase**. Damit funktioniert das
-Login von jedem Browser und jedem Gerät aus mit denselben Daten — Brave,
-Chrome, Firefox, Handy, PC, alles zeigt dieselben Buchungen.
+## Enthaltene Dateien
+- `index.html` — lädt die App und alle nötigen externen Bibliotheken (Supabase, XLSX, jsPDF)
+- `app.js` — die komplette App-Logik (inkl. Biometrie-Sperre, 2FA/TOTP, Login-Historie, Auto-Logout)
+- `style.css` — Design/Layout
+- `supabase-config.js` — deine Supabase-Zugangsdaten (URL + anon key)
+- `schema.sql` — komplettes Datenbank-Setup für Supabase (einmalig im SQL-Editor ausführen)
+- `favicon.ico`, `manifest.json`, `icons/` — App-Logo als Favicon, Homescreen-/PWA-Icon und im App-Header
 
-## Setup (einmalig, ca. 5 Minuten)
+## Einrichtung
 
-### 1. Supabase-Projekt erstellen
-1. Gehe auf **https://supabase.com** → "Start your project" → kostenlos registrieren.
-2. "New Project" → Namen vergeben, Datenbank-Passwort setzen (merken, brauchst du selten), Region wählen (z.B. Frankfurt).
-3. Warte ~1–2 Minuten, bis das Projekt fertig eingerichtet ist.
+1. **Supabase-Projekt anlegen**: https://supabase.com/dashboard → "New project"
+2. **Datenbank einrichten**: Im Dashboard → "SQL Editor" → `schema.sql` komplett reinkopieren → "Run"
+3. **Storage-Buckets anlegen** (Dashboard → "Storage" → "New bucket"):
+   - `receipts` (privat) — für Beleg-Uploads
+   - `avatars` (öffentlich lesbar) — für Profilbilder
+4. **Zugangsdaten eintragen**: Dashboard → "Project Settings" → "API" → `Project URL` und `anon public` Key in `supabase-config.js` eintragen (sind dort schon mit deinen Werten vorausgefüllt)
+5. **2FA aktivieren**: Bei den meisten Supabase-Projekten ist TOTP/MFA standardmäßig aktiv. Falls nicht: Dashboard → "Authentication" → "Providers" prüfen.
+6. **Hosten**: Alle Dateien zusammen auf einen beliebigen Webserver/Hosting-Dienst hochladen (z. B. Netlify, Vercel, GitHub Pages, eigener Server) — wichtig ist NUR, dass es über **HTTPS** läuft (nötig für Face ID / Biometrie und für Supabase Auth allgemein).
 
-### 2. Datenbank-Tabelle anlegen
-1. Im Supabase-Dashboard: linke Seitenleiste → **SQL Editor** → "New query".
-2. Öffne die Datei `schema.sql` aus diesem Ordner, kopiere den kompletten Inhalt hinein.
-3. Klick auf **"Run"**. Fertig — die Tabelle `user_data` mit allen Sicherheitsregeln ist angelegt.
+## Sicherheits-Features in dieser Version
 
-### 3. Zugangsdaten eintragen
-1. Im Dashboard: **Project Settings** (Zahnrad-Symbol) → **API**.
-2. Kopiere die **Project URL** und den Key **"anon public"**.
-3. Öffne `supabase-config.js` in diesem Ordner und trage beide Werte ein:
-   ```js
-   const SUPABASE_URL = "https://xxxxxxxxxxxx.supabase.co";
-   const SUPABASE_ANON_KEY = "eyJhbGciOi...";
-   ```
+- **Biometrie-Sperre (Face ID / Fingerabdruck / Windows Hello)**: Geräte-lokale Zusatzsperre über WebAuthn. Einrichtung in den Einstellungen unter "Gesichtserkennung / Biometrie". Ersetzt NICHT den echten Login, ist nur ein schneller Geräte-Riegel.
+- **Echte Zwei-Faktor-Authentifizierung (2FA/TOTP)**: über Supabase Auth, mit jeder Standard-Authenticator-App (Google Authenticator, Authy, etc.) nutzbar. Einrichtung in den Einstellungen.
+- **Login-Historie**: zeigt die letzten 10 Anmeldungen (Gerätetyp + Zeitpunkt) in den Einstellungen.
+- **Automatische Abmeldung**: sperrt/loggt nach wählbarer Inaktivitätszeit (aus/5/15/30 Min) automatisch aus.
 
-### 4. E-Mail-Bestätigung ausschalten (empfohlen für den Eigenbedarf)
-Standardmäßig verlangt Supabase eine Bestätigungs-E-Mail bei der Registrierung.
-Da die App intern mit Pseudo-Adressen arbeitet (kein echtes Postfach), solltest
-du das ausschalten:
-1. Dashboard → **Authentication** → **Providers** → **Email**.
-2. Häkchen bei **"Confirm email"** entfernen → Speichern.
+## Open Banking (Enable Banking)
 
-### 5. Hosten
-Genau wie vorher — es ist weiterhin eine reine statische Seite:
-- **Netlify**: Ordner auf https://app.netlify.com/drop ziehen
-- **GitHub Pages**: Dateien ins Repo, Pages aktivieren
-- **Vercel**: Ordner hochladen
-- Alle 4 Dateien gehören zusammen: `index.html`, `style.css`, `app.js`, `supabase-config.js`
+Ab dieser Version ist echte Bank-Anbindung dabei (Konto per Login verbinden,
+Transaktionen automatisch synchronisieren) — Zugriffstoken bzw. der private
+Schlüssel liegen dabei ausschließlich in einer Supabase Edge Function, nie
+im Browser-Code. Anbieter ist Enable Banking (GoCardless nimmt seit Juli
+2025 keine Neuanmeldungen mehr an).
 
-## Warum das jetzt überall funktioniert
+Setup: siehe `OPEN-BANKING-SETUP.md` (zusätzlich `open-banking-schema.sql`
+ausführen und die Edge Function `open-banking` mit deinen Enable-Banking-
+Zugangsdaten deployen). Ohne dieses Setup bleibt der manuelle CSV-Kontoauszug-
+Import (Konten-Tab → "Kontoauszug importieren", erkennt Sparkasse/Volksbank/VR/
+Revolut automatisch) weiterhin die einfachere Alternative.
 
-Vorher: Jeder Browser hatte seinen eigenen `localStorage` — Brave und Chrome
-sahen sich gegenseitig nie. Jetzt: Beim Login fragt die App **Supabase** (einen
-zentralen Server), nicht den eigenen Browser. Alle Geräte/Browser sprechen
-mit demselben Server → dieselben Daten überall.
+## Deployment
 
-## Admin-Zugang
-
-Du bist automatisch Admin, weil dir das Supabase-Projekt gehört:
-- **Authentication → Users**: alle registrierten Nutzer sehen, sperren, löschen
-- **Table Editor → user_data**: alle Daten aller Nutzer einsehen/bearbeiten
-- **SQL Editor**: eigene Abfragen über alle Nutzer laufen lassen
-
-Details und Beispiel-SQL dazu stehen als Kommentar am Ende von `schema.sql`.
-
-Ein eigener Admin-**Tab innerhalb der App** (um andere Nutzer direkt aus der
-Weboberfläche zu verwalten) ist zusätzlich möglich, aber nicht Teil dieser
-Version — sag Bescheid, falls gewünscht.
-
-## Kosten
-
-Der Supabase-Kostenlos-Tarif reicht für eine private/kleine Nutzung locker aus
-(500 MB Datenbank, 50.000 aktive Nutzer/Monat, im "Free Plan" enthalten).
-
-## Dateien in diesem Ordner
-
-```
-index.html            Hauptseite
-style.css              Styles
-app.js                 App-Logik (jetzt mit Supabase statt localStorage)
-supabase-config.js      DEINE Zugangsdaten (musst du ausfüllen, siehe oben)
-schema.sql              SQL-Setup zum einmaligen Ausführen im Supabase SQL-Editor
-```
+Für Vercel siehe `VERCEL-DEPLOY.md`.
